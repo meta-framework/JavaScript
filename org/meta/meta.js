@@ -6,91 +6,43 @@
 * f.a.kurz@googlemail.com
 */
 'use strict' ;
-/**
-* The set-up function.
-*
-* Create a `META_CONFIGURATION` object within the scope of this script before running this script in order to pass configuration settings.
-*/
-(function(configuration) {
-
-	// Hidden Attributes
-
-	var	CONFIGURATION = { },
+(function(GLOBAL_OBJECT) {
+	var	TASKS = {/*QUEUE: [ ], IDS: { }*/},
 		CONSTANTS = { },
+		CONFIGURATION = { },
+		CORE = { },
+		/**
+		* Contains the constructor functions of defined objects mapped to their identifiers (i.e. the concatenation of namespace and name using a dot character).
+		*/
+		LIBRARY = {CONSTRUCTORS: { }, PACKAGES: { }},
+
 		DATE = Date.now( ),
 		COUNTER = 0,
-		QUEUE = [ ],
-		/*A map containing a cross reference for object aliases and identifiers.*/
+		/**A map containing a cross reference for object aliases and identifiers.
+		* @deprecated
+		*/
 		ALIAS = {TO_ID: { }, FOR_ID: { }},
+		/**@deprecated*/
 		PACKAGES = { } ;
-		
-	//- Configuration Elements
+
+	// Constants
 	
-		/*@note: Define a `Meta` container object containing all configuration key-value pairs before calling this script in order to pass configuration settings.*/
-		/**
-		* The relative or absolute path to the root directory for the library.
-		* @configuration
-		*/
-		CONFIGURATION.LIBRARY_ROOT = configuration.LIBRARY_ROOT ;
-		/**
-		* Running mode identification strings.
-		*
-		* Purely for reference.
-		*/
-		CONFIGURATION.RUNNING_MODES = {PRODUCTION: 'production', DEBUG: 'debug'} ;
-		CONFIGURATION.RUNNING_MODES.DEFAULT = CONFIGURATION.RUNNING_MODES.PRODUCTION ;
-		/**
-		* The running mode for the application.
-		*
-		* May be set to 'debug' in order to enable (additional) analytics, e.g. console output.
-		*/
-		CONFIGURATION.RUNNING_MODE = configuration.RUNNING_MODE || CONFIGURATION.RUNNING_MODE.DEFAULT ;
-		/**
-		* Conflict mode identification strings.
-		*
-		* Purely for reference. In 'override' mode the `Meta` object will be placed on the global object by its name and by the alias `$` (regardless of whether it replaces an existing `$` object).
-		*/
-		CONFIGURATION.CONFLICT_MODES = {RESOLVE: 'resolve', OVERRIDE: 'override'} ;
-		CONFIGURATION.CONFLICT_MODES.DEFAULT = CONFIGURATION.CONFLICT_MODES.OVERRIDE ;
-		/**
-		* The conflict mode for the application
-		*/
-		CONFIGURATION.CONFLICT_MODE = configuration.CONFLICT_MODE || CONFIGURATION.CONFLICT_MODES.OVERRIDE ;
-		/**
-		* Default required objects.
-		*
-		* These packages are automatically required when the set-up has finished.
-		* Use this setting in combination with a singleton type in order to apply the initialization logic for your application (e.g. if `com.project.Project` is the object which contains the initialization logic for your application, set `META_CONFIGURATION.REQUIRE_DEFAULT` to include `'com.project.Project'`; where, `com.project.Project` is defined in a package within the directory `<root>/com/project/project.js` with (at least) the following content:
-		*
-		*    \/*
-		*	* @package com.project
-		*	* @provide Project
-		*	*\/
-		*	{
-		*		Project: {
-		*			type: Meta.constant('CONSTRUCTOR_TYPE_SINGLETON'),
-		*			main: function main(arguments) { <initialization logic> }
-		*		}
-		*	}
-		* Since this object is specified to be a singleton, the constructor will be called upon being required (in order to replace the constructor with the constructed instance to conform to the singleton pattern) and your initialization logic is applied immediately.
-		* @type Array
-		*/
-		CONFIGURATION.REQUIRE_DEFAULT = configuration.REQUIRE_DEFAULT ;
-	//- Constants
-	
-	//-- Type Constants
+	//- Type Constants
 		
 		CONSTANTS.VOID = void(0) ;
 
-	//-- Default Objects
+	//- Other Constants
 			
-		CONSTANTS.IS_BROWSER = !! window;
 		/**
 		* A reference to the global object. 
+		*
+		* This script expects the global context to be referenced by `this` when its being executed. The reference `this` is passed to set-up function (this function wrapper) as its only formal parameter `GLOBAL_OBJECT`.
 		*/
-		CONSTANTS.GLOBAL_OBJECT = CONSTANTS.IS_BROWSER ? window.window : this ;
-		CONSTANTS.DEFAULT_VIEW = CONSTANTS.IS_BROWSER ? window.window : null ;
-		CONSTANTS.DEFAULT_DOCUMENT = CONSTANTS.IS_BROWSER ? window.document : null ;
+		CONSTANTS.GLOBAL_OBJECT = GLOBAL_OBJECT ;
+		CONSTANTS.DEFAULT_VIEW = GLOBAL_OBJECT.window || null ;
+		CONSTANTS.DEFAULT_DOCUMENT = GLOBAL_OBJECT.document || null ;
+		CONSTANTS.IS_BROWSER = !! CONSTANTS.DEFAULT_VIEW && !! CONSTANTS.DEFAULT_DOCUMENT ;
+		/**@deprecated*/
 		CONSTANTS.DEFAULT_REQUEST = (function( ) {
 
 			// variables
@@ -111,13 +63,16 @@
 
 		})( ) ;
 
-	//-- Browser And Mobile Detection
+	//- Browser And Mobile Detection
 
 		/**
 		* @link http://www.quirksmode.org/dom/w3c_cssom.html#screenview
 		*/
 /*@todo: This is tentative*/
 		CONSTANTS.IS_MOBILE = CONSTANTS.IS_BROWSER && (window.screen.availWidth < 400 || window.screen.availHeight < 400) ;
+ 
+	//-- Internet Explorer
+
 		/**
 		*IE detection.
 		*@link http://en.wikipedia.org/wiki/Conditional_comment
@@ -164,27 +119,42 @@
 			return f ;
 
 		})( ) ;
+ 
+		CONSTANTS.MS_ACTIVEX_XHR_VERSIONS = ['Msxml2.XMLHTTP.6.0','Msxml2.XMLHTTP.3.0','Microsoft.XMLHTTP'],
+ 
+	//-- Opera
 		
 		CONSTANTS.IS_OPERA = CONSTANTS.IS_BROWSER ? !! CONSTANTS.GLOBAL_OBJECT.opera : false ;
 		
-	//-- Package Management
+	//- Package Management
 		
-		CONSTANTS.PACKAGE_ANNOTATION = '/*@' ;
-		CONSTANTS.PACKAGE_ANNOTATION_PACKAGE = 'package' ;
-		CONSTANTS.PACKAGE_ANNOTATION_REQUIRE = 'require' ;
-		CONSTANTS.PACKAGE_ANNOTATION_PROVIDE = 'provide' ;
+		CONSTANTS.ANNOTATION = '/*@' ;
+		CONSTANTS.ANNOTATION_IDENTIFIER = 'identifier' ;
+		CONSTANTS.ANNOTATION_REQUIRE = 'require' ;
+		CONSTANTS.ANNOTATION_USE = 'use' ;
+		/**@deprecated*/
+		CONSTANTS.ANNOTATION_PROVIDE = 'provide' ;
 		
-	//-- Object Definitions
-
+	//- Type Definitions
+	
+		/**@deprecated: moved to global `define` function*/
 		CONSTANTS.CONSTRUCTOR_TYPE_ABSTRACT = 'abstract' ;
+		CONSTANTS.CONSTRUCTOR_ABSTRACT = 'abstract' ;
+		/**@deprecated: moved to global `define` function*/
 		CONSTANTS.CONSTRUCTOR_TYPE_FACTORY = 'factory' ;
+		CONSTANTS.CONSTRUCTOR_FACTORY = 'factory' ;
+		/**@deprecated: moved to global `define` function*/
 		CONSTANTS.CONSTRUCTOR_TYPE_SINGLETON = 'singleton' ;
+		/**@deprecated: constructor type removed*/
+		CONSTANTS.CONSTRUCTOR_SINGLETON = 'singleton' ;
+		/**List of constructor type identifier strings.*/
+		CONSTANTS.CONSTRUCTOR_TYPES = [CONSTANTS.CONSTRUCTOR_ABSTRACT, CONSTANTS.CONSTRUCTOR_FACTORY] ;
 		/**A list of reserved property names for object definitions.*/
 		CONSTANTS.RESERVED = ['name', 'prototype', 'super', 'reflect', 'constructor'] ;
-		
-	//-- Literals
+ 
+	//- Literals
 	
-	//--- ...
+	//-- ...
 
 		CONSTANTS.LITERAL_BLOCK_COMMENT_BEGIN = '/*' ;
 		CONSTANTS.LITERAL_BLOCK_COMMENT_END = '*/' ;
@@ -194,7 +164,7 @@
 		CONSTANTS.LITERAL_NULL = 'null' ;
 		CONSTANTS.LITERAL_UNDEFINED = 'undefined' ;
 		
-	//--- Type Strings
+	//-- Type Strings
 
 		CONSTANTS.TYPE_VOID = 'Void' ;
 		CONSTANTS.TYPE_NULL = 'Null' ;
@@ -215,7 +185,7 @@
 		CONSTANTS.ARRAY_TAG = '[object Array]' ;
 		CONSTANTS.FUNCTION_TAG = '[object Function]' ;
 
-	//--- Characters
+	//-- Characters
 
 		CONSTANTS.CHARACTERS = {
 				ESCAPE: '\\',
@@ -223,8 +193,9 @@
 				SINGLE_QUOTE: '\'',
 				DOUBLE_QUOTE: '"',
 				DOT: '.',
-				COLOR: ';',
 				COMMA: ',',
+				SEMICOLON: ';',
+				COLON: ':',
 				HYPHEN: '-',
 				UNDERSCORE: '_',
 				PLUS: '+',
@@ -241,169 +212,631 @@
 				TABULATOR: '\t'
 		} ;
 		
-	//-- Matchers
+	//--
+	
+		CONSTANTS.UNENUMERABLE = ['toString', 'toLocaleString', 'valueOf', 'hasOwnProperty', 'isPrototypeOf', 'propertyIsEnumerable', 'constructor'] ;
+ 
+	//- XHR
+	
+	//-- HTTP Method
+	
+		CONSTANTS.HTTP_METHOD_GET = 'GET' ;
+		CONSTANTS.HTTP_METHOD_POST = 'POST' ;
+//		CONSTANTS.HTTP_METHOD_PULL = 'PULL' ;
+//		CONSTANTS.HTTP_METHOD_GET = 'GET' ;
+	
+	//-- Ready States
+
+		CONSTANTS.XHR_READY_STATE_UNSENT = 0 ;
+		CONSTANTS.XHR_READY_STATE_OPENEND = 1 ;
+		CONSTANTS.XHR_READY_STATE_RECEIVED = 2 ;
+		CONSTANTS.XHR_READY_STATE_LOADING = 3 ;
+		CONSTANTS.XHR_READY_STATE_DONE = 4 ;
+
+	//-- MIME Extensions
+	
+		CONSTANTS.MIME_TEXT = 'text/plain' ;
+		CONSTANTS.MIME_CSS = 'text/css' ;
+		CONSTANTS.MIME_XML = 'application/xml' ;
+		CONSTANTS.MIME_JSON = 'text/json' ;
+		CONSTANTS.MIME_JAVASCRIPT = 'application/javascript' ;
+ 
+	// Configuration
+	
+		CONFIGURATION = { } ;
+		/**The current configuration settings.*/
+		CONFIGURATION.SETTINGS = { } ;
+		/**The key string for the "application-root" setting.*/
+		CONFIGURATION.APPLICATION_ROOT = 'application-root' ;
+		/**The key string for the "library-root" setting.*/
+		CONFIGURATION.LIBRARY_ROOT = 'library-root' ;
+	//- Default Values
+	
+		CONFIGURATION.SETTINGS[CONFIGURATION.APPLICATION_ROOT] = null ;
+		CONFIGURATION.SETTINGS[CONFIGURATION.LIBRARY_ROOT] = '/' ;
+		/**Configuration keys and default values
+		* @deprecated: unnecessary
+		*/
+//		CONFIGURATION.KEYS = { APPLICATION_ROOT: 'application-root', LIBRARY_ROOT: 'library-root' /*, ... */} ;
+		/**
+		* @deprecated: unnecessary
+		*/
+//		CONFIGURATION.DEFAULTS = {'application-root': null, 'library-root': '/'/*, ... */} ;
+//		CONFIGURATION.KEYS = {metaLibraryRoot: 'LIBRARY_ROOT', metaRunningMode: 'RUNNING_MODE', metaRequireDefault: 'REQUIRE_DEFAULT', metaApplicationRoot: 'APPLICATION_ROOT'} ;
+		/**
+		* The relative or absolute path to the root directory for the library.
+		* @configuration
+		* @deprecated: moved to `CONFIGURATION.DEFAULTS`
+		*/
+//		CONFIGURATION.LIBRARY_ROOT = '/' ;
+		/**
+		* Running mode identification strings.
+		*
+		* Debug mode is intended to be as stable as possible while providing additional debugging information.
+		* In production mode performance is emphasized.
+		*
+		* For reference.
+		*/
+		CONFIGURATION.RUNNING_MODES = {PRODUCTION: 'production', DEBUG: 'debug'} ;
+		/**
+		* The running mode for the application.
+		*
+		* May be set to 'debug' in order to enable (additional) analytics, e.g. console output.
+		*/
+		CONFIGURATION.RUNNING_MODE = CONFIGURATION.RUNNING_MODES.DEBUG ;
+		/**
+		* Default required objects.
+		*
+		* A comma seperated list of object identifier strings. These objects are imported by default.
+		*
+		* @type String
+		* @deprecated: not needed
+		*/
+//		CONFIGURATION.REQUIRE_DEFAULT = '' ;
+		/**
+		* @deprecated: moved to `CONFIGURATION.DEFAULTS`
+		**/
+//		CONFIGURATION.APPLICATION_ROOT = null ;
+
+	//- Matchers
 		
 		CONSTANTS.MATCHERS = {
 				WHITESPACE_TRIM: /^\s+|\s+$/g
 		} ;
 		
-	// Hidden Utility Functions
-
-		/*@note: These functions contain potentially unsafe operations -- such as use of `eval`, reflective calls to core type functions, asnychronous callback chaining, etc. -- and must be used with caution. For this reason, they are not accessible directly.
-		* The implementation of the functions is intended to be as low level as possible so that they may be performance optimized by interpreters: they should therefore only use basic JavaScript (with the exception of the functions themselves).
+	// Core Operations
+	
+	var queueAdd,
+		queueNext,
+		queueSwitch,
+		isVoid,
+		isSet,
+		isNull,
+		isBoolean,
+		isNumber,
+		isInteger,
+		isFloat,
+		isString,
+		isObject,
+		isFunction,
+		isArray,
+		isDate,
+		isRegExp,
+		isError,
+		isNode,
+		isWindow,
+		isInstanceOf,
+		typeOf,
+		constructorOf,
+		assert,
+		error,
+		stringQuote,
+		stringTrim,
+		stringTokenize,
+		stringFormat,
+		arrayEach,
+		arraySome,
+		arrayEvery,
+		arrayCopy,
+		arrayRemove,
+		arrayContains,
+		functionCopy,
+		functionBind,
+		/**@deprecated*/
+		functionNewConstructor,
+		objectEach,
+		objectKeys,
+		objectPrint,
+		objectDefineProperty,
+		objectResolveNamespace,
+		objectCreateNamespace,
+		objectPrint,
+		definitionParse,
+		/**@deprecated*/
+		definitionImport,
+		definitionRequire,
+		definitionParseAnnotation,
+		definitionCompile,
+		constructorCreate,
+		typeIdentifierToURL,
+		typeDefine,
+		typeDefinePrototype,
+		typeDefineGlobalProperties,
+		typeDefineLocalProperties,
+		requestCreate,
+		requestSend,
+		/**@deprecated*/
+		requestSetMIMEType,
+		constant,
+		id ;
+ 
+	//- Process Management
+	
+		/**
+		* Enqueue a task.
+		*
+		* A task may be enqueued as the successor to parent task by passing the parent's id string. Enqueuing child to parent tasks forms "task chains"; elements of a task chain have to be processed sequentially. Elements in two different task chains may processed in any order.
+		*
+		* @param (Function) task A task function.
+		* @param (String) [optional] parent The id of the immediately preceding task for the given task.
 		*/
+		CORE.queueAdd = queueAdd = function queueAdd(task, parent, async)
+		{
+// console.log('queueAdd (parent="%s", async="%s")', parent, async) ;
+			// variables
+ 
+			var wrapper,
+				s,
+				o ;
+ 
+			//
+
+				/*Descendant tasks inherit the id of the task chain head.*/
+
+				s = parent || id( ) ;
+ 
+				/*Wrap the task chain.*/
+ 
+				wrapper = {task: task, id: s, async: async || false} ;
+ 
+				/*In case a parent task was given, chain with the parent task; otherwise add to the task map.*/
+ 
+				if(parent)
+				{
+
+						assert(isSet(parent, TASKS), 'Illegal State: Parent task for ID is unknown ("' + parent + '")') ;
+
+						/*Iterate over the task chain's elements and append the wrapper to the last element.*/
+ 
+						o = TASKS[parent] ;
+ 
+						while(o.next) o = o.next ;
+
+						o.next = wrapper, wrapper.previous = o ;
+
+				}
+				else TASKS[s] = wrapper ;
+ 
+			// return
+
+			return s ;
+ 
+		} ;
+ 
+		/**
+		* Dequeue a task.
+		* @todo should be split into `queueRemove` and `queueNext`
+		*/
+		CORE.queueNext = queueNext = function queueNext(id)
+		{
+// console.log('queueNext (id="%s")', id) ;
+			// preconditions
+ 
+			assert(isSet(id, TASKS), 'Illegal State: Task for ID is unknown ("' + id + '")') ;
+ 
+			// variables
+ 
+			var wrapper, next ;
+ 
+			//
+ 
+				/*Retain a reference to the task wrapper and delete the task from the id map.*/
+ 
+				wrapper = TASKS[id] ;
+ 
+				/*Determine whether the task chain is empty after removing the task chain head. If it is not empty replace the task head with its immediate successor and flag it as waiting for the asynchronous task to finish; otherwise delete the entry.*/
+
+				if((next = wrapper.next))
+				{
+ 
+						TASKS[id] = next ;
+						next.waiting = true ;
+ 
+						delete wrapper.next ;
+						delete next.previous ;
+ 
+				}
+				else delete TASKS[id] ;
+ 
+				/*Process the task.*/
+ 
+				wrapper.task.call(null, id) ;
+ 
+				/*Determine time behaviour of the task. In case of an asynchronous task, switch to another task chain; otherwise try to process the next task right away.*/
+
+				if(wrapper.async) queueSwitch( ) ;
+				else if(next)	queueNext(next.id) ;
+ 
+		} ;
+ 
+		/**Switch the currently active task chain.*/
+		CORE.queueSwitch = queueSwitch = function queueSwitch( )
+		{
+ //console.log('queueSwitch ()') ;
+			// variables
+ 
+			var id ;
+ 
+			//
+	
+				/*Determine a task chain which is not waiting for an asynchronous task to finish.*/
+
+				objectEach(TASKS, function(wrapper) {
+						if(! wrapper.waiting) { id = wrapper.id ; return false ; }
+				}) ;
+
+				if(id) queueNext(id) ;
+ 
+			// return
+ 
+			return id ;
+ 
+		} ;
+	
+	//- Type Identification
+
+		/**
+		* The MS implementation of the strict equality operator will fail if an undeclared reference is evaluated; using `typeof` will work cross-browser)
+		* @link http://msdn.microsoft.com/en-us/library/259s7zc1(v=vs.94).aspx
+		* @param (Object) object An Object.
+		* @return Boolean
+		*/
+		CORE.isVoid = isVoid = function isVoid(object)
+		{
+			return typeof object === CONSTANTS.LITERAL_UNDEFINED ;
+		} ;
+		/**
+		* Returns true if the given object contains a property for the given key.
+		*
+		* Use this instead of `isVoid` to test for a property of core Objects in order to avoid errors.
+		*
+		* @note IE 8 fails with a ``Object does not support property or method'' error if an undefined property is accessed; hence the try-catch block.
+		* @param (String) key A key String.
+		* @param (Object) object An Object.
+		* @return Boolean
+		*/
+		CORE.isSet = isSet = function isSet(key, object)
+		{
+				try { return ! isVoid(object[key]) ; }
+				catch(e) { return false ; }
+		} ;
+		/**
+		* Test whether the given Object is a null value.
+		*
+		* @param (Object) object An Object.
+		* @return Boolean
+		*/
+		CORE.isNull = isNull = function isNull(object)
+		{
+			return object === null ;
+		} ;
+		/**
+		* Test whether the given Object is an instance of Boolean.
+		*
+		* @param (Object) object An Object.
+		* @return Boolean
+		*/
+		CORE.isBoolean = isBoolean = function isBoolean(object)
+		{
+			return typeof object === 'boolean' ;
+		} ;
+		/**
+		* Test whether the given Object is an instance of Number.
+		*
+		* This method returns `false` for a `NaN` value. Use `isNaN` to test for a `NaN` value.
+		*
+		* @param (Object) object An Object.
+		* @return Boolean
+		*/
+		CORE.isNumber = isNumber = function isNumber(object)
+		{
+			return typeof object === 'number' ? isNaN(object) ? false : true : false ;
+		} ;
+		/**
+		* Test whether the given Object is an instance of Number for an integer value.
+		*
+		* @param (Object) object An Object.
+		* @return Boolean
+		*/
+		CORE.isInteger = isInteger = function isInteger(object)
+		{
+
+			//
+
+				if(isNumber(object)) return (object % 1) === 0 ;
+
+				else return false ;
+
+		} ;
+		/**
+		* Test whether the given Object is an instance of Number for a float value.
+		*
+		* Floating point numbers whose fractional part is zero (e.g. `1.0`) are treated as integers.
+		*
+		* @param (Object) object An Object.
+		* @return Boolean
+		*/
+		CORE.isFloat = isFloat = function isFloat(object)
+		{
 		
-		function enqueue(id, callback, priority, asynchronous)
+			//
+			
+				if(isNumber(object)) return (object % 1) !== 0 ;
+				else { return false ; }
+
+		} ;
+		/**
+		* Test whether the given Object is an instance of String
+		*
+		* @param (Object) object An Object.
+		* @return Boolean
+		*/
+		CORE.isString = isString = function isString(object)
+		{
+			return typeof object === 'string' ;
+		} ;
+		/*
+		* Test whether the given object is an instance of Object.
+		*
+		* @param (Object) object An Object.
+		* @return Boolean
+		*/
+		CORE.isObject = isObject = function isObject(object)
+		{
+			return typeof object === 'object' ? Object.prototype.toString.call(object) ===	CONSTANTS.OBJECT_TAG : false ;
+		} ;
+		/*
+		* Test whether the given object is an instance of Function.
+		*
+		* @param (Object) object An Object.
+		* @return Boolean
+		*/
+		CORE.isFunction = isFunction = function isFunction(object)
+		{
+			return typeof object === 'function' ? Object.prototype.toString.call(object) === CONSTANTS.FUNCTION_TAG : false ;
+		} ;
+		/*
+		* Test whether the given object is an instance of Array.
+		*
+		* @param (Object) object An Object.
+		* @return Boolean
+		*/
+		CORE.isArray = isArray = function isArray(object)
+		{
+			return object instanceof Array ;
+		} ;
+		/*
+		* Test whether the given object is an instance of Date.
+		*
+		* @param (Object) object An Object.
+		* @return Boolean
+		*/
+		CORE.isDate = isDate = function isDate(object)
+		{
+			return isInstanceOf(Date, object) ;
+		} ;
+		/*
+		* Test whether the given object is an instance of RegExp.
+		*
+		* @param (Object) object An Object.
+		* @return Boolean
+		*/
+		CORE.isRegExp = isRegExp = function isRegExp(object)
+		{
+			return isInstanceOf(RegExp, object) ;
+		} ;
+		/*
+		* Test whether the given object is an instance of Error.
+		*
+		* @param (Object) object An Object.
+		* @return Boolean
+		*/
+		CORE.isError = isError = function isError(object)
+		{
+			return isInstanceOf(Error, object) ;
+		} ;
+		/*
+		* Test whether the given object is a node type. 
+		*
+		* In case the DOM implementation does not provide a (public) `Node` constructor function, the type test is applied using using duck typing for the `.nodeName` and `.nodeType` attributes of the given object.
+		*
+		* @param (Object) object An object.
+		* @return Boolean
+		*/
+		CORE.isNode = isNode = function isNode(object)
+		{
+			return typeof Node === 'function' ?
+						object instanceof Node :
+						typeof Node === typeof object && ! isObject(object) && isString(object.nodeName) && isInteger(object.nodeType) ;
+		} ;
+		/*
+		* Test whether the given Object is the Window Object.
+		*
+		* @param (Object) object An object.
+		* @return Boolean
+		*/
+		CORE.isWindow = isWindow = function isWindow(object)
 		{
 		
 			// variables
 			
-			var b,
-				head, link, o ;
+			var s ;
 			
 			//
-console.log('') ;
-console.log('::enqueue (id="%s", priority="%s", asynchronous="%s")', id, priority, asynchronous) ;
-/*
-				/*Try to find the head of the task for the given id or create it.*/
-				
-				arraySome(QUEUE, function(link) { if(link.id === id) { head = link ; return true ; } }) ;
-
-				/*Create a link to add to the chain.*/
-				
-				o = {id: id, callback: callback, priority: priority || false, asynchronous: asynchronous || false, process_id: id + ':' + createID( )};
-//o.process_id = id + ':' + createID( ) ;
-				if(typeof head === CONSTANTS.LITERAL_UNDEFINED)
-				{
-				
-						/*Create a head element for this task pointing back at itself and add it to the chain.*/
-
-						QUEUE[QUEUE.length] = o.previous = o.next = o ;
-						
-				}
-				else
-				{
-						
-						link = head ;
-				
-						/*If the given callback is prioritized, make it the new head; otherwise append it.*/
-
-						if(priority)
-						{
-						
-								o.previous = head.previous, o.next = head.next ;
-								head.previous.next = o, head.previous = o ;
-								
-								QUEUE[index] = o ;
-								
-						}
-						else
-						{
-				
-								o.previous = head.previous, o.next = head ;
-								head.previous.next = o, head.previous = o ;
-								
-						}
-
-				}
-				
-arrayEach(QUEUE, function(head, index) {
-		var link = head, i = -1 ;
-console.log('\ttask-#%s (id="%s")', index, head.id) ;
-		do {
-console.log('\t\tprocess-#%s: priority=%s, asynchronous=%s', ++i, link.priority, link.asynchronous) ;
-if(link.previous.next.process_id !== link.process_id) throw new Error('Invalid enchainment: invalid `next`pointer on predecessor: "' + link.previous.next.process_id + '".') ;
-if(link.next.previous.process_id !== link.process_id) throw new Error('Invalid enchainment: invalid `previous` pointer on successor "' + link.next.previous.process_id + '".') ;
-if(i > 10) throw new Error('Faulty break condition') ;
-		}
-		while((link = link.next).process_id !== head.process_id) ;
-}) ;
-
-		}
-
-		function dequeue(id, force)
-		{
-console.log('') ;
-console.log('::dequeue (id="%s", force=%s)', id, force) ;
-			// variables
 			
-			var link,
-				index = 0,
-				o,
-				f ;
-				
-			//
-			
-				/*For a dequeue call with unspecified id, dequeue the head of the first element in the queue---if it exists.*/
-				
-				if(typeof id === CONSTANTS.LITERAL_UNDEFINED) link = QUEUE[index] ;
-				else arraySome(QUEUE, function(o, i) { if(o.id === id) { link = o, index = i ; return true ; } }) ;
-				
-				if(typeof link !== CONSTANTS.LITERAL_UNDEFINED)
-				{
-					
-						/*Only dequeue if the head element for this task chain is either synchronous or is asynchronous and the forced dequeue flag was raised.*/
-						
-						if(! (b = link.asynchronous) || b && force)
-						{
-console.log('\thead-element: %s', link.process_id) ;
-								
-								/*Dechain the link; and either replace the old head it with its successor in the queue or remove the queue element if there is no other successor.*/
+				s = Object.prototype.toString.call(object) ;
 
-								link.previous.next = link.next ;
-								link.next.previous = link.previous ;
-
-								/*Replace the old head with its successor in the task chain---if it exists; otherwise, remove the task head from the queue.*/
-								if((o = link.next).process_id !== link.process_id) QUEUE[index] = o ;
-								else QUEUE.splice(index, 1) ;
-arrayEach(QUEUE, function(head, index) {
-var link = head, i = -1 ;
-console.log('\ttask-#%s (id="%s")', index, head.id) ;
-do {
-console.log('\t\tprocess-#%s: process-id="%s", priority=%s, asynchronous=%s, (previous="%s", next="%s")', ++i, link.process_id, link.priority, link.asynchronous, link.previous.process_id, link.next.process_id) ;
-if(link.previous.next.process_id !== link.process_id) throw new Error('Invalid enchainment: invalid `next`pointer on predecessor: "' + link.previous.next.process_id + '".') ;
-if(link.next.previous.process_id !== link.process_id) throw new Error('Invalid enchainment: invalid `previous` pointer on successor "' + link.next.previous.process_id + '".') ;
-if(i > 10) throw new Error('Faulty break condition') ;
-}
-while((link = link.next).process_id !== head.process_id) ;
-}) ;
-
-								/*Execute the calback for the removed element.*/
-							
-								if((f = link.callback) !== null) f.call(null, link.id) ;
-
-						}
-						else if(b && typeof force !== CONSTANTS.LITERAL_UNDEFINED) throw new Error('Inconsistent dequeue: unforced dequeue for asynchronous callback.') ;
-					
-//						dequeue(link.id) ;
-//						if(! link.asynchronous) dequeue(id) ;
-
-						
-				}
-		
-		}
-				
-		function createID( )
-		{
-		
-			// variables
-			
-			var i, s ;
-			
-			//
-		
-				if((i = Date.now( )) === DATE) { COUNTER++ ; }
-				else { DATE = i ; COUNTER = 0 ; }
-
-				s = i + "-" + COUNTER ;
+				if(s === '[object ' + CONSTANTS.TYPE_WINDOW + ']') { return true ; }
 
 			// return
 			
-			return s ;
+			return false ;
 
-		}
+		} ;
+		/**
+		* Return a String type identifying the given Object's type.
+		*
+		* @param (Object) object An object.
+		* @return Boolean
+		*/
+		CORE.typeOf = typeOf = function typeOf(object)
+		{
 
-		function stringQuote(string)
+			// variables
+
+			var s ;
+
+			//
+
+				/* First things first, exclude `null` and `undefined`.*/
+
+				if(isVoid(object)) { return CONSTANTS.TYPE_VOID ; }
+				else if(isNull(object)) { return CONSTANTS.TYPE_NULL ; }
+				else {
+
+						if(isFunction(object) ) { return CONSTANTS.TYPE_FUNCTION ; }
+						else if(isBoolean(object)) { return CONSTANTS.TYPE_BOOLEAN ; }
+						else if(isNumber(object)) { return isFloat(object) ? CONSTANTS.TYPE_FLOAT : CONSTANTS.TYPE_INTEGER ; }
+						else if(isString(object)) { return CONSTANTS.TYPE_STRING ; }
+						else if(isDate(object)) { return CONSTANTS.TYPE_DATE ; }
+						else if(isRegExp(object)) { return CONSTANTS.TYPE_REGEXP ; }
+						else if(isError(object)) { return CONSTANTS.TYPE_ERROR ; }
+						else if(isNode(object)) { return CONSTANTS.TYPE_NODE ; }
+						else {
+						
+								/*Parse the object tag for the type name.*/
+
+								s = Object.prototype.toString.call(object) ;
+								s = s.substring(8, s.length - 1) ;
+
+								switch(s) {
+										case CONSTANTS.TYPE_ARRAY: return CONSTANTS.TYPE_ARRAY ; break ;
+										case CONSTANTS.TYPE_WINDOW: return CONSTANTS.TYPE_WINDOW ; break ;
+										/*Instances of a constructor function identify as Objects even though they might have overriden `Object.prototype.toString`; in this case we use the name of the constructor's ''name'' property to identify the type or default to `Object`.*/
+										case CONSTANTS.TYPE_OBJECT: return !! object.constructor ? object.constructor.name : s ; break ;
+										default: return 'Unknown' ;
+								}
+
+						}
+
+				}
+
+			// return
+
+			return null ;
+
+		} ;
+		
+		/**
+		* Return the constructor for the given identifier (if it exists).
+		*
+		* @param (String) identifier A type identifier string.
+		*
+		* @return (Function) The constructor function for the type for the given type identifier string.
+		*/
+		CORE.constructorOf = constructorOf = function constructorOf(identifier) { return LIBRARY.CONSTRUCTORS[identifier] || null ; } ;
+
+		/**
+		* Return a `Boolean` value indicating whether the Object referenced by `b` has a sub-type or same type relation to the object referenced by `a`. 
+		*
+		* This function builds upon the functionality of the `instanceof` operator. If `a` is an object, then `b` is compared to `a`'s constructor; in any other case the objects are directly compared. 
+		* The `instanceof` operator returns true if and only if `o instanceof f` satifies the following conditions: (1) `o` is an Object; (2) `f` is a Function; (3) the creation of `o` involves a call to `f` somewhere in the prototype chain (`f` may also be the constructor).
+		* In any case `b` must be an Object instance, not a Function.
+		* @implementation We do not directly test for `.isFunction(a)` because (at least) Safari implements the constructors of some core types (e.g. `NodeList`) as something else than `Function` sub-types. This makes this function return the wrong result in a test like `isInstanceOf(nodes, NodeList)` (where `nodes` is a `NodeList` instance).
+		* @param a (Object, Function) A potential super-type constructor or super-type instance.
+		* @param b (Object) A potential sub-type instance.
+		* @return (Boolean) True, if `a` is a super-type of `b`
+		*/
+		CORE.isInstanceOf = isInstanceOf = function isInstanceOf(a, b)
+		{
+
+			//
+				
+				if(isObject(a)) { return b instanceof a.constructor ; }
+				else return b instanceof a ;
+				
+			// return
+			
+			return false ;						
+				
+		} ;
+		
+	//- Code Flow Operations
+	
+		/**
+		* Throw a generic error. 
+		*
+		* String substitution for the error message applies.
+		* 
+		* @example `error("Invalid type for parameter: %s", typeOf(object));`
+		*/
+		CORE.error = error = function error(message/*, substitute...*/)
+		{
+		
+			// variables
+			
+			var s ;
+			
+			//
+			
+				if(arguments.length > 1) s = stringFormat.apply(null, arguments) ;
+				else s = message ;
+
+				throw new Error(s) ;
+				
+		} ;
+
+		/**
+		* @todo In production mode, suppress assertion errors. Assertions are debugging statements which confirm the consistency of the actual program state with the intended program state.
+		*/
+		CORE.assert = assert = function assert(assertion, message/*, substitute...*/)
+		{
+		
+			// variables
+			
+			var s ;
+			
+			//
+
+				if(! assertion)
+				{
+				
+						if(arguments.length > 2) s = stringFormat.apply(null, arrayCopy(arguments, 1, arguments.length)) ;
+						else s = message ;
+						
+						throw new Error(s) ;
+						
+				}
+				
+			// return
+			
+			return this ;
+
+		} ;
+
+	//- String Operations
+
+		CORE.stringQuote = stringQuote = function stringQuote(string)
 		{
 		
 			// variables
@@ -434,9 +867,9 @@ while((link = link.next).process_id !== head.process_id) ;
 
 			return s ;
 
-		}
+		} ;
 		
-		function stringTrim(string)
+		CORE.stringTrim = stringTrim = function stringTrim(string)
 		{
 		
 			//
@@ -445,9 +878,9 @@ while((link = link.next).process_id !== head.process_id) ;
 				
 				return string.replace(CONSTANTS.MATCHERS.WHITESPACE_TRIM, CONSTANTS.LITERAL_EMPTY) ;
 
-		}
+		} ;
 		
-		function stringTokenize(string, delimiter)
+		CORE.stringTokenize = stringTokenize = function stringTokenize(string, delimiter)
 		{
 		
 			// variables
@@ -456,7 +889,9 @@ while((link = link.next).process_id !== head.process_id) ;
 				index = 0, last= 0, i = delimiter.length ;
 			
 			//
-			
+ 
+				/*Find indexes for the given delimiter and gather leading substrings.*/
+ 
 				while((index = string.indexOf(delimiter, last)) !== -1)
 				{
 				
@@ -465,18 +900,20 @@ while((link = link.next).process_id !== head.process_id) ;
 						last = index + i ;
 				
 				}
+ 
+				/*Gather a potential trailing substring after the last delimiter's index (or the start index if none was found).*/
 				
 				i = string.length ;
 
-				if(last < i - 1) a[a.length] = string.substring(last, i) ;
+				if(last <= i - 1) a[a.length] = string.substring(last, i) ;
 			
 			// return
 			
 			return a ;
 		
-		}
+		} ;
 		
-		function stringFormat(string/*, substitute...*/)
+		CORE.stringFormat = stringFormat = function stringFormat(string/*, substitute...*/)
 		{
 		
 			// variables
@@ -516,7 +953,9 @@ while((link = link.next).process_id !== head.process_id) ;
 			
 			return s ;
 			
-		}
+		} ;
+		
+	//- Array Operations
 		
 		/**
 		* Iterate over the elements of an Array executing the given callback fixing---if specified---the context to the given object.
@@ -529,7 +968,7 @@ while((link = link.next).process_id !== head.process_id) ;
 		* @param callback (Function) A callback function to be called for each element in the Array; the callback receives---in this order---the value, its index and the array itself via arguments.
 		* @context (Object) A context object; if specified, the callback function is executed within the context of the given object, i.e. the dynamic reference `this` will refer to the object.
 		*/
-		function arrayEach(array, callback, context)
+		CORE.arrayEach = arrayEach = function arrayEach(array, callback, context)
 		{
 		
 			// variables
@@ -549,12 +988,12 @@ while((link = link.next).process_id !== head.process_id) ;
 						
 				}
 
-		}
+		} ;
 		
 		/**
 		* Iterate over the elements of an Array executing the given callback fixing---if specified---the context to the given object.
 		*
-		* The callback is executed for each element in the array passing the value, its index and this array just like in `Array.prototype.forEeach`. Unlike `Array.prototype.forEach` this function will immediately return with a true value upon the first true value returned by the passed callback and otherwise will return false.
+		* The callback is executed for each element in the array passing the value, its index and this array just like in `arrayEeach`. Unlike `arrayEach` this function will immediately return with a true value upon the first true value returned by the passed callback and otherwise will return false.
 		*
 		* @implementation The implementation follows the ECMAScript language specification version 5 and up.
 		* @link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/some
@@ -564,8 +1003,7 @@ while((link = link.next).process_id !== head.process_id) ;
 		* @context (Object) A context object; if specified, the callback function is executed within the context of the given object, i.e. the dynamic reference `this` will refer to the object.
 		* @return (Boolean) True, if the callback returned true once; false, if the callback never returned true.
 		*/
-
-		function arraySome(array, callback, context)
+		CORE.arraySome = arraySome = function arraySome(array, callback, context)
 		{
 		
 			// variables
@@ -590,15 +1028,59 @@ while((link = link.next).process_id !== head.process_id) ;
 			
 			return false ;
 		
-		}
+		} ;
+
+		/**
+		* Iterate over the elements of an Array executing the given callback and breaking iteration if the callback returns false.
+		*
+		* The callback is executed for each element in the array passing the value, its index and this array just like in `arrayEach`. Unlike `arrayEach` this function will immediately return with false upon the first false value returned by the passed callback and otherwise will return true.
+		*
+		* @implementation The implementation follows the ECMAScript language specification version 5 and up.
+		* @link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/every
+		*
+		* @param callback (Function) A callback function to be called for each element in the Array; the callback receives---in this order---the value, its index and the array itself via arguments.
+		* @context (Object) A context object; if specified, the callback function is executed within the context of the given object, i.e. the dynamic reference `this` will refer to the object.
+		* @return (Boolean) True, if the callback never returned false; false, if the callback returned false once.
+		*/
+		CORE.arrayEvery = arrayEvery = function arrayEvery(array, callback, context)
+		{
+			var a,
+				index = -1, length = array.length ;
+			
+			//
+			
+				a = [, , array] ;
+			
+				while(++index < length)
+				{
+				
+						a[0] = array[index], a[1] = index ;
+						
+						if(callback.apply(context, a) === false) return false  ;
+
+				}
+				
+			// return
+			
+			return true ;
+
+		} ;
 		
 		/**
 		* Copy a range of a given array starting at the given index.
+		* 
+		* The stop index is the index of the first element which is not getting copied to the new array, e.g. for `stop === array.length` all elements from `start` up to the last element of the array are being copied.
+		*
+		* The return value is a new array which references the same objects as the original array ("one level deep" copy).
+		*
+		* @param (Array) array The array to copy.
+		* @param (Integer) start The start index.
+		* @param (Integer) stop The stop index.
 		*/
-		function arrayCopy(array, start)
+		CORE.arrayCopy = arrayCopy = function arrayCopy(array, start, stop)
 		{
-				return Array.prototype.slice.call(array, start) ;
-		}
+				return Array.prototype.slice.apply(array, [start, stop]) ;
+		} ;
 
 		/**
 		* Binary search on an Array type.
@@ -614,7 +1096,7 @@ while((link = link.next).process_id !== head.process_id) ;
 		* 
 		* @return (Integer) The index of the first element within the array strictly equal to the given reference value; -1, otherwise.
 		*/
-		function arrayContains(array, value, start, end)
+		CORE.arrayContains = arrayContains = function arrayContains(array, value, start, end)
 		{
 		
 			// variables
@@ -637,13 +1119,26 @@ while((link = link.next).process_id !== head.process_id) ;
 			
 			return -1 ;
 		
-		}
+		} ;
+ 
+		CORE.arrayRemove = arrayRemove = function arrayRemove(array, index)
+		{
+				array.splice(index, 1) ;
+		} ;
 
+	//- Function Operations
+	
+		CORE.functionBind = functionBind = function functionBind(fn, context, args)
+		{
+				if(args) return function anonymous( ) { fn.apply(context, Arrargs) ; }
+				else return function anonymous( ) { fn.call(context) ; }
+		} ;
+ 
 		/**
 		* Copies the given function with all its properties (including the ''prototype'' property).
 		* @return A copy of the given function.
 		*/
-		function functionCopy(original)
+		CORE.functionCopy = functionCopy = function functionCopy(original)
 		{
 		
 			// variables
@@ -663,20 +1158,14 @@ while((link = link.next).process_id !== head.process_id) ;
 			
 			return copy ;
 		
-		}
+		} ;
+ 
+	//- Object Operations
 		
-	// Object functions
-	
-		function objectDefineProperty(object, property, specification)
-		{
-
-			//
-/*@todo: getter/setter where possible.*/
-				object[property] = specification.value ;
-
-		}
-		
-		function objectEach(object, callback, context)
+		/**
+		* @link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/hasOwnProperty
+		*/
+		CORE.objectEach = objectEach = function objectEach(object, callback, context)
 		{
 		
 			// variables
@@ -688,7 +1177,7 @@ while((link = link.next).process_id !== head.process_id) ;
 				a = [,,object] ;
 			
 				for(var key in object)
-						if(object.hasOwnProperty(key))
+						if(Object.prototype.hasOwnProperty.call(object, key))
 						{
 						
 								a[0] = object[key], a[1] = key ;
@@ -697,154 +1186,66 @@ while((link = link.next).process_id !== head.process_id) ;
 								
 						}
 
-		}
-		
+		} ;
 		/**
+		* @link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/keys#Polyfill
 		*/
-		function objectResolveNamespace(namespace, target)
-		{
-// console.log('::objectResolveNamespace ("%s")', namespace) ;
-
-			// variables
-			
-			var index = 0, previous = 0,
-				s,
-				o = target ;
-			
-			//
-
-				while((index = namespace.indexOf('.', previous)) !== -1)
-				{
-				
-						/*Return early if `previous` equals `index - 1` (substring is empty string): in this case the namespace string contains an invalid sequence `'..'`.*/
-
-						if((s = namespace.substring(previous, index)) === '') return ;
-						else {
-
-								try
-								{
-										if(typeof (o = o[s]) === CONSTANTS.LITERAL_UNDEFINED) return ;
-								}
-								catch(error) { return ; }
+		CORE.objectKeys = objectKeys = (function( ) {
+				if(({toString: null}).propertyIsEnumerable('toString'))
+						return function objectKeys(object)
+						{
+						
+							// preconditions
+							
+								assert(!! object && (typeof object === 'object' || typeof object === 'function'), 'Illegal Argument: object for formal parameter `object` has invalid type.') ;
 								
-								previous = index + 1 ;
+							// variables
+							
+							var keys ;
+							
+							//
+							
+								keys = [ ] ;
 								
+								objectEach(object, function(value, key) { keys[keys.length] = key ; }) ;
+								
+							// return
+							
+							return keys ;
+							
 						}
-				
-				}
-				
-				s = namespace.substring(previous, namespace.length) ;
-
-				o = o[s] ;
-
-			// return
-			
-			return o ;
-		
-		}
-
-		/**
-		* Create a namespace for the given namespace identifier string on the given target.
-		*
-		* Namespace identifier strings are simple identifier sequences delimited by a dot (e.g. 'a.b.c.d'). This method automatically creates a property if the value for a key is undefined; it will travel along existing object properties but will break on null values.
-		*
-		* @return The host of the object for the given namespace or undefined if the namespace creation failed.
-		*/
-		function objectCreateNamespace(namespace, target)
-		{
-		
-			// variables
-
-			var o = target,
-				index = 0, previous = 0,
-				s ;
-			
-			//
-
-				while((index = namespace.indexOf('.', previous)) !== -1)
-				{
-
-						/*Return early if `previous` equals `index - 1` (substring is empty string): in this case the namespace string contains an invalid sequence `'..'`.*/
-
-						if((s = namespace.substring(previous, index)) === '') return ;
-						else {
-
-								if(typeof o === 'object')
-								{
-
-										try
-										{
-
-												/*Add a nested object on undefined values; continue with existing property if not null.*/
-
-												if(typeof o[s] === CONSTANTS.LITERAL_UNDEFINED) o = o[s] = { } ;
-												else if(o[s] !== null) o = o[s] ;
-												else return ;
-												
-										}
-										catch(error) { return ; }
-										
-										previous = index + 1 ;
-										
-								}
+				else
+						return function objectKeys(object)
+						{
+						
+							// preconditions
+							
+								assert(!! object && (typeof object === 'object' || typeof object === 'function'), 'Illegal Argument: object for formal parameter `object` has invalid type.') ;
 								
+							// variables
+							
+							var keys ;
+							
+							//
+							
+								keys = [ ] ;
+								
+								objectEach(object, function(value, key) { keys[keys.length] = key ; }) ;
+								
+								/**/
+								
+								arrayEach(CONSTANTS.UNENUMERABLE, function(name) { if(Object.prototype.hasOwnProperty.call(object, name)) keys[keys.length] = name ; }) ;
+								
+							// return
+							
+							return keys ;
+
 						}
-				
-				}
-				
-				s = namespace.substring(previous, namespace.length) ;
-
-				try {
-						if(typeof o[s] === CONSTANTS.LITERAL_UNDEFINED) o[s] = { } ;
-				}
-				catch(error) { return ; }
-
-			// return
-			
-			return o ;
-		
-		}
+		})( ) ;
 		
 		/**
-		*@link https://bugzilla.mozilla.org/show_bug.cgi?id=647484
 		*/
-/*@deprecated*/
-		function objectExtend(object, specification)
-		{
-throw 'Deprecated' ;
-			// variables
-			
-			var o,
-				f ;
-
-			//
-
-				if(typeof Object.defineProperty !== CONSTANTS.LITERAL_UNDEFINED)
-				{
-				
-						o = {value: specification.value, writable: specification.writable, configurable: specification.configurable, enumerable: specification.enumerable} ;
-						
-						if((specification.get || specification.set) && (writable === true || typeof value !== CONSTANTS.LITERAL_UNDEFINED)) throw new Error('Invalid property description: specifying getter or setter is incompatible with specifying `writable` as `true` or a non-undefined `value` property.') ;
-						
-						if((f = o.get)) o.get = f ;
-						if((f = o.set)) o.set = f ;
-				
-						Object.defineProperty(
-								object,
-								specification.property,
-								o
-						) ;
-						
-				}
-				else object[specification.property] = specification.value ;
-				
-			// return
-			
-			return object ;
-
-		}
-
-		function objectPrint(object)
+		CORE.objectPrint = objectPrint = function objectPrint(object)
 		{
 
 			// variables
@@ -878,22 +1279,279 @@ throw 'Deprecated' ;
 			
 			return s ;
 				
-		}
+		} ;
+
+		CORE.objectDefineProperty = objectDefineProperty = function objectDefineProperty(object, property, specification)
+		{
+
+			//
+/*@todo: getter/setter where possible.*/
+				object[property] = specification.value ;
+
+		} ;
+		
+		/**
+		*/
+		CORE.objectResolveNamespace = objectResolveNamespace = function objectResolveNamespace(namespace, target)
+		{
+
+			// variables
+			
+			var index = 0, previous = 0,
+				s,
+				o = target ;
+			
+			//
+
+				while((index = namespace.indexOf('.', previous)) !== -1)
+				{
+				
+						/*Return early if `previous` equals `index - 1` (substring is empty string): in this case the namespace string contains an invalid sequence `'..'`.*/
+
+						if((s = namespace.substring(previous, index)) === '') return ;
+						else {
+
+								if(! isSet(s, o)) return ;
+								else if(! isObject((o = o[s]))) return ;
+								
+								previous = index + 1 ;
+								
+						}
+				
+				}
+				
+				s = namespace.substring(previous, namespace.length) ;
+				o = o[s] ;
+
+			// return
+			
+			return o ;
+		
+		} ;
 
 		/**
-		* Define an object constructor.
+		* Create a namespace for the given namespace identifier string on the given target.
 		*
-		* This method does not test for existing definitions and consequently will override existing ones. Use with care.
+		* Namespace identifier strings are simple identifier sequences delimited by a dot (e.g. 'a.b.c.d'). This method automatically creates a property if the value for a key is undefined; it will travel along existing object properties but will break on null values.
 		*
-		* @return (Function) The constructor for the defined object.
+		* @return The host of the object for the given namespace or undefined if the namespace creation failed.
 		*/
-		function objectDefine(namespace, name, definition)
+		CORE.objectCreateNamespace = objectCreateNamespace = function objectCreateNamespace(namespace, target)
+		{
+
+			// variables
+
+			var o = target,
+				index = 0, previous = 0,
+				s ;
+			
+			//
+			
+				/*Iterate over the namespace steps.*/
+
+				while((index = namespace.indexOf('.', previous)) !== -1)
+				{
+
+						/*Return early if `previous` equals `index - 1` (substring is empty string): in this case the namespace string contains an invalid sequence `'..'`.*/
+
+						if((s = namespace.substring(previous, index)) === '') return ;
+						else {
+
+								/*Add a nested object on undefined values; continue with existing property if not null.*/
+						
+								if(! isSet(s, o)) o = o[s] = { } ;
+								else if(! isObject((o = o[s]))) return ;
+								
+								previous = index + 1 ;
+								
+						}
+				
+				}
+				
+				if((s = namespace.substring(previous, namespace.length)) === '') return ;
+
+				if(! isSet(s, o)) o = o[s] = { } ;
+				else if(! isObject((o = o[s]))) return ;
+
+			// return
+			
+			return o ;
+		
+		} ;
+ 
+	//- XHR Operations
+	
+		/**
+		* Create an XHR object with the given properties.
+		*
+		* @todo ready state change handler needs to handle more status-state combinations.
+		*/
+		CORE.requestCreate = requestCreate = function requestCreate(properties)
+		{
+ 
+			// variables
+ 
+			var request,
+				f,
+				s ;
+ 
+			//
+ 
+				/*Get a request object.*/
+ 
+				if(CONSTANTS.IS_IE)
+				{
+				
+						arraySome(CONSTANTS.MS_ACTIVEX_XHR_VERSIONS, function(version) {
+						
+								try { if(! isNull((request = new ActiveXObject(version)))) { return true ; } }
+								catch(e) { }
+								
+						}) ;
+
+				}
+				else request = new CONSTANTS.GLOBAL_OBJECT.XMLHttpRequest( ) ;
+
+				assert(! (isNull(request) || isVoid(request)), 'Illegal State: Unable to create request object.') ;
+ 
+				/*Set properties and ready state change handler.*/
+ 
+				properties.request = request ;
+ 
+				f = request.onreadystatechange = functionBind(function ( )
+				{
+						
+					// variables
+
+					var status = this.request.status,
+						state = this.request.readyState ;
+ 
+					//
+
+						if((status - 400 > 0) && (f = this.error)) f(this) ;
+						else switch(state)
+						{
+								case CONSTANTS.XHR_READY_STATE_DONE:
+										if(status === 200 && (f = this.done)) f(this) ;
+										else if((f = this.error)) f(this) ;
+								break ;
+								default: /*@todo: state handlers*/;
+						}
+
+				}, properties) ;
+
+				if((s = properties.mime))
+						if(isSet('overrideMimeType', request)) request.overrideMimeType(s) ;
+ 
+			// return
+ 
+			return request ;
+ 
+		} ;
+
+		CORE.requestSend = requestSend = function requestSend(request, properties)
+		{
+		
+			// variables
+			
+			var method = properties.method,
+				o ;
+			
+			//
+			
+				request.open(method, properties.url, properties.async) ;
+			
+				switch(method)
+				{
+						case CONSTANTS.HTTP_METHOD_GET:
+								request.setRequestHeader('Content-Type', 'XMLHTTP/1.0') ;
+						break ;
+						case CONSTANTS.HTTP_METHOD_POST:
+								request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded') ;
+						break ;
+						/*@todo: all HTTP methods*/
+						default: error('Unsupported Operation: HTTP method currently not supported (method="%s")', method) ;
+				}
+				
+				/*Add headers.*/
+				
+				if((o = properties.headers))
+						objectEach(o, function(values, header) {
+								arrayEach(values, function(value) { request.setRequestHeader(header, value) ; }, this) ;
+						}, this) ;
+
+				/*As per convention.*/
+				
+				if(properties.flag) request.setRequestHeader('X-Requested-With', 'XMLHttpRequest') ;
+			
+				/*Send the request.*/
+			
+				if(properties.binary) request.sendAsBinary(properties.body) ;
+				else request.send(properties.body) ;
+		
+		} ;
+		
+		/**@deprecated: merged with `requestCreate`.*/
+		CORE.requestSetMIMEType = requestSetMIMEType = function requestSetMIMEType(request, mime)
+		{
+				if(isSet('overrideMimeType', request)) request.overrideMimeType(mime) ;
+		} ;
+		
+	//-- Library Operations
+	
+		CORE.constructorCreate = constructorCreate = function constructorCreate(name, body, parameter)
+		{
+		
+			// variables
+			
+			var constructor,
+				s ;
+			
+			//
+			
+				s = parameter ? parameter.join(CONSTANTS.CHARACTERS.COMMA) : '' ;
+
+			// return
+			
+				return (Function(stringFormat('return function %s(%s){%s}', name, s, body)))( ) ;
+		} ;
+	
+		CORE.typeIdentifierToURL = typeIdentifierToURL = function typeIdentifierToURL(identifier, root, suffix)
+		{
+ 
+			// variables
+ 
+			var url,
+				a,
+				slash = CONSTANTS.CHARACTERS.SLASH, dot = CONSTANTS.CHARACTERS.DOT ;
+ 
+			//
+ 
+				a = stringTokenize(identifier, dot) ;
+ 
+				url = root ? root + slash : slash ;
+				url += suffix ? a.join(slash) + dot + suffix : a.join(slash) ;
+ 
+			// return
+ 
+			return url ;
+
+		} ;
+
+		/**
+		* Define an object type.
+		*
+		* This operation does not test for existing definitions and consequently will override existing ones. Use with care.
+		*
+		* @return (Function) The constructor for the defined object type.
+		*/
+		CORE.typeDefine = typeDefine = function typeDefine(constructor, definition)
 		{
 
 			// variables
 
 			var constructor,
-				identifier,
+				reflect,
 				f,
 				s,
 				i,
@@ -901,66 +1559,73 @@ throw 'Deprecated' ;
 				o ;
 			
 			//
-			
-				s = namespace + '.' + name ;
+/*@deprecated: property `name` must be specified within passed constructor's `reflect` property
+				/*Get name substring from identifier.*
 
-				/*Create the constructor function.*/
-/*@todo: re-evaluate the necessity of a hidden `id` value to safely distinguish between object instances; the `===` operator may already do that.*/
-				constructor = (new Function('return function ' + name + '(){if(!Meta.instanceOf(' + s + ', this)){throw new Error("Invalid call to constructor without keyword `new` (identifier=\\"' + s + '\\").");}if(arguments.length>0){if(this.constructor.reflect.type===Meta.constant("CONSTRUCTOR_TYPE_ABSTRACT")){throw new Error("Invalid call to constructor of abstract object (object-identifier=\\"" + this.constructor.reflect.identifier + "\\")");}var f ; if((f=this.constructor.reflect.main)){f.apply(this, arguments);}}}'))
-				.call(null) ;
-				constructor.reflect = {name: s, package: namespace, identifier: s, type: definition.type, extend: definition.extend, main: definition.main,  prototype: null, global: [ ], local: [ ]} ;
+				a = stringTokenize(identifier, CONSTANTS.CHARACTERS.DOT) ;
+				s = a[a.length - 1] ;
+@*/
+				/*Get a reference to the `reflect` property of the constructor function.*/
 				
+				reflect = constructor.reflect ;
+
+/*@deprecated: these properties must be specified within the passed constructor's `reflect` property
+				o.identifier = identifier,
+				o.type = definition.type || CONSTANTS.CONSTRUCTOR_FACTORY,
+				o.extend = definition.extend, o.main = definition.main,
+@*/
+				reflect.global = [ ], reflect.local = [ ] ;
+/*@deprecated: property `namespace` must be specified within passed constructor's `reflect` property
+				a = arrayCopy(a, 0, a.length - 1) ;
+				s = a.join(CONSTANTS.CHARACTERS.DOT) ;
+
+				o.namespace = s ;
+@*/
+
 				/*The main method must specify a non-empty formal parameter list in order to safely discriminate between instantiations for use as a prototype Object and regular instantiations.*/
 
-				if(!! (f = definition.main))
-						if(f.length === 0) throw Error('Invalid main method. Formal parameter list may not be empty (object-identifier="' + constructor.reflect.identifier + '").') ;
+				if((f = definition.main))
+				{
+
+						assert(f.length !== 0, 'Invalid main method. Formal parameter list may not be empty (type-identifier="%s")', reflect.identifier) ;
+						reflect.main = f ;
+						
+				}
 						
 				/*Create an instance of the prototype object and reference its global properties.*/
 
-				if(typeof (s = definition.extend) !== CONSTANTS.LITERAL_UNDEFINED) objectDefinePrototype(constructor, s, definition) ;
+				if((s = reflect.extend)) typeDefinePrototype(constructor, s, definition) ;
+				
+				/*Reflect the constructor on instances.*/
 
 				constructor.prototype.constructor = constructor ;
 
+				/*Put local properties on the constructor's prototype property.*/
+				
+				if((o = definition.local)) typeDefineLocalProperties(constructor, o) ;
+				
 				/*Put global properties on the constructor function.*/
-/*@todo: refactor to `objectDefineGlobal`*/
-				if(typeof (o = definition.global) !== CONSTANTS.LITERAL_UNDEFINED)
-				{
-						
-						a = constructor.reflect.global ;
-
-						objectEach(o, function(value, key) {
-						
-								if(arrayContains(CONSTANTS.RESERVED, key, 0, CONSTANTS.RESERVED.length) !== -1) throw new Error('Invalid use of reserved property name (name="' + key + '", identifier="' + constructor.reflect.identifier + '")') ;
-								
-								constructor[key] = value ;
-								a[a.length] = key ;
-
-						}) ;
-//console.log('\tconstructor-properties: %s', a) ;
-				}
-
-				if(typeof (o = definition.local) !== CONSTANTS.LITERAL_UNDEFINED) objectDefineLocalProperties(constructor, o) ;
+				
+				if((o = definition.global)) typeDefineGlobalProperties(constructor, o) ;
 
 			// return
 			
 			return constructor ;
 
-		}
+		} ;
 		
 		/**
 		* @param constructor (Function)
-		* @param identifier (String)
+		* @param identifier (String) The prototype identifier string.
 		* @param definition (Object)
 		*/
-		function objectDefinePrototype(constructor, identifier, definition)
+		CORE.typeDefinePrototype = typeDefinePrototype = function typeDefinePrototype(constructor, identifier, definition)
 		{
 
 			// variables
 			
-			var o,
-				prototype,
-				f,
-				s,
+			var prototype,
+				o,
 				a ;
 			
 			//
@@ -969,37 +1634,59 @@ throw 'Deprecated' ;
 
 				/*Use the constructor function to create a new instance.*/
 
-				if(! (prototype = objectResolveNamespace(identifier, CONSTANTS.GLOBAL_OBJECT))) Meta.error('Prototype object has not been defined (identifier="%s", object-identifier="%s")', identifier, constructor.reflect.identifier) ;
+				assert((prototype = LIBRARY.CONSTRUCTORS[identifier]), 'Illegal state: prototype has not been defined (prototype-identifier="%s", type-identifier="%s")', identifier, constructor.reflect.identifier) ;
 
 				/*Reflect the prototype constructor.*/
 				
-				o.prototype = prototype instanceof Function ? prototype : prototype.constructor ;
+				o.prototype = identifier ;
 
 				/*Create an instance of the prototype object to extend.*/
 
-				constructor.prototype = prototype instanceof Function ? new prototype( ) : new prototype.constructor( ) ;
-						
-				/*Reference the main function if it exists on the prototype constructor but not on the defined object.*/
-				
-				if(typeof (f = o.main) === CONSTANTS.LITERAL_UNDEFINED) f = o.prototype.reflect.main ;
-				
-				o.main = f ;
+				constructor.prototype = new prototype( ) ;
+
+				/*Inherit the main function of the prototype if there is no definition for it on the sub type.*/
+
+				if(! isSet('main', o)) o.main = prototype.reflect.main ;
 				
 				/*Copy local key identifiers of the prototype.*/
-				
-				f = o.prototype ;
 
-				o.local = arrayCopy(f.reflect.local, 0) ;
+				a = prototype.reflect.local ;
+				o.local = arrayCopy(a, 0, a.length) ;
 
-				/*Reference global properties of the prototype unless they override global properties specified witin the definition.*/
+				/*Copy global properties of the prototype constructor to the definition (unless they override global properties specified witin the definition).*/
 				
 				o = definition.global = definition.global || { } ;
 				
-				if((a = f.reflect.global)) arrayEach(a, function(property) { if(typeof o[property] === CONSTANTS.LITERAL_UNDEFINED) o[property] = f[property] ; }) ;
+				if((a = prototype.reflect.global)) arrayEach(a, function(property) { if(! isSet(property, o)) o[property] = prototype[property] ; }) ;
 
-		}
+		} ;
 		
-		function objectDefineLocalProperties(constructor, local)
+		CORE.typeDefineGlobalProperties = typeDefineGlobalProperties = function typeDefineGlobalProperties(constructor, global)
+		{
+		
+			// variables
+			
+			var a ;
+			
+			//
+
+				a = constructor.reflect.global ;
+
+				objectEach(global, function(value, key) {
+				
+						if(arrayContains(CONSTANTS.RESERVED, key, 0, CONSTANTS.RESERVED.length) !== -1) error('Invalid use of reserved property name (name="%s", identifier="%s")', key, constructor.reflect.identifier) ;
+						
+						constructor[key] = value ;
+						a[a.length] = key ;
+
+				}) ;
+
+		} ;
+		
+		/**
+		* @todo assure that object definitions which extend abstract constructor types either are themselves abstract or implement abstract functions.
+		*/
+		CORE.typeDefineLocalProperties = typeDefineLocalProperties = function typeDefineLocalProperties(constructor, local)
 		{
 
 			// variables
@@ -1007,20 +1694,23 @@ throw 'Deprecated' ;
 			var a ;
 
 			//
-/*todo: assure that object definitions which extend abstract constructor types either are themselves abstract or implement abstract functions.*/
 				/*Reflect the constructor on the prototype property. This is required for correct type detection.*/
 
 				constructor.prototype.constructor = constructor ;
-		
+				
 				/*
 				* Create the `super` property which contains overriden properties of the prototype object.
 				* @note The reserved keyword `super` may be used as property name but not as a variable identifier.
 				* @link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Reserved_Words#Reserved_word_usage
 				*/
 
-				constructor.prototype.super = { } ;
-				
+				/*@deprecated: removed (reflective call to super type supplies this function)*/
+
+//				constructor.prototype.super = { } ;
+
 				a = constructor.reflect.local ;
+				
+				/*Fill the prototype property of the type constructor with the local properties of the type definition.*/
 	
 				objectEach(local, function(value, key) {
 				
@@ -1030,11 +1720,13 @@ throw 'Deprecated' ;
 					
 					//
 				
-						if(arrayContains(CONSTANTS.RESERVED, key, 0, CONSTANTS.RESERVED.length) !== -1) throw new Error('Invalid use of reserved property name (name="' + key + '")') ;
+						assert(arrayContains(CONSTANTS.RESERVED, key, 0, CONSTANTS.RESERVED.length) === -1, 'Invalid use of reserved property name (name="%s")', key) ;
 						
-						/*Add overriden local properties to the `super` property.*/
+						/*@deprecated: removed (reflective call to super type supplies this function)
 						
-						if(typeof ( o = constructor.prototype[key]) !== CONSTANTS.LITERAL_UNDEFINED) constructor.prototype.super[key] = o ;
+						Add overriden local properties to the `super` property.*/
+						
+//						if(typeof ( o = constructor.prototype[key]) !== CONSTANTS.LITERAL_UNDEFINED) constructor.prototype.super[key] = o ;
 						
 						constructor.prototype[key] = value ;
 						
@@ -1042,258 +1734,169 @@ throw 'Deprecated' ;
 
 				}) ;
 
-		}
+		} ;
 		
 		/**
-		* Require the object identified by the given identifier string.
-		*
-		* @pre The object for the given identifier must be defined.
-		* @post The constructor for the object is initialized and the constructor---or object in case of a singleton type---is placed on the global object under its own name in the namespace identified by the package. The `REQUIRED` object reflects this by containing a reference to the constructor or object.
-		* @param identifier (String) The string identifier of the object to require.
-		* @return (Object) The initialized constructor for the object identified by the given identifier string or its instance (in case of a singleton type).
-		**/
-/*@deprecated: constructor initialization has been dropped*/
-/*@todo: remove*/
-		function objectUse(identifier, alias)
-		{ throw new Error('Deprecated') ;
-console.log('::objectUse ("%s")', identifier, alias) ;
+		* Import an object definition using XHR, build its constructor and put it in the library.
+		*/
+		CORE.definitionRequire = definitionRequire = function definitionRequire(identifier)
+		{
+ 
 			// variables
-			
-			var s,
-				constructor,
-				name,
-				a,
-				i,
-				f,
-				o,
-				host ;
-			
+ 
+			var id ;
+ 
 			//
-			
-				/*Return early if the object has already been required. Flag as used in order to prevent an infinite recursion loop (i.e. if this object requests use of an object which itself or whose own requested object use this object).*/
-				
-				if((s = ALIAS.TO_ID[alias]))
-						if(s !== identifier) throw new Error('Alias is already defined (alias="' + alias + '", defined-for="' + s + '"')
-						else return this ;
-						
-				/*Get the constructor of the object and use the object name as alias if not specified.*/
-				
-				if(! (constructor = objectResolveNamespace(identifier, CONSTANTS.GLOBAL_OBJECT))) throw new ReferenceError('Object is undefined (identifier="' + identifier + '"') ;
-				
-				s = alias || constructor.reflect.name ;
-				
-				ALIAS.TO_ID[s] = identifier ;
-				ALIAS.FOR_ID[identifier] = s ;
-			
-				o = constructor.reflect ;
-				
-				/*Use objects requested by this object.*/
-console.log('\tused-objects: %s', o.use) ;
-				if((a = o.use))
+ 
+				/*Skip already imported definitions. An alreay imported definition will not be `undefined` in `LIBRARY.CONSTRUCTORS` (i.e. either a constructor or a constructor placeholder exists).*/
+ 
+				if(! isSet(identifier, LIBRARY.CONSTRUCTORS))
 				{
-				
-						i = a.length ;
+//console.log('definitionRequire("%s")', identifier) ;
+						/*Import the definition for the given identifier.*/
+
+						id = queueAdd(function(id) {
+//console.log('download-definition ("%s")', identifier) ;
+								requestSend(
+										requestCreate({
+												mime: CONSTANTS.MIME_JAVASCRIPT,
+												/*@todo: `queueDump` to remove an entire task chain and call to `queueDump` on error*/
+												error: function( ) { },
+												done: function(properties) {
+
+														/*Store the retrieved object definition in the library as a placeholder and continue.*/
+														
+														LIBRARY.CONSTRUCTORS[identifier] = properties.request.responseText ;
+												
+														queueNext(id) ;
+														
+												}
+										}),
+										{
+												url: typeIdentifierToURL(identifier, CONFIGURATION.SETTINGS[CONFIGURATION.LIBRARY_ROOT]),
+												method: 'GET',
+												async: true
+										}
+								) ;
+						}, null, true) ;
+// console.log('task-id: "%s"', id) ;
+						/*Parse object definition and put it on the constructor map of the library as a placeholder.*/
+
+						queueAdd(function(wrapper) {
+//console.log('parse-definition("%s")', identifier) ;
+							var parsed, o,
+								constructor,
+								name ;
+							
+								parsed = LIBRARY.CONSTRUCTORS[identifier] = definitionParse(LIBRARY.CONSTRUCTORS[identifier]) ;
+//console.dir(parsed) ;
+								/*Create the constructor function before actually parsing the object definition and store the parsed object definition (including the source to be parsed). We do this in order to be able to pass a reference to the constructor when parsing the source of a dependent object definition; i.e. one that requires this object).*/
+								
+								name = parsed.name ;
+								
+								constructor = constructorCreate(
+										name,
+										stringFormat(
+											'var o=this.constructor;'
+											+ 'if(! (this instanceof %s)){throw new Error("Invalid call to constructor (identifier=\\"%s\\")");}'
+											+ 'if(arguments.length>0){o.reflect.main.apply(this, arguments);}',
+											name,
+											identifier
+										)
+								) ;
+								constructor.reflect = parsed ;
+								
+								/*Create an entry by name in the packages container and an entry by identifier within the constructor map.*/
+								o = objectCreateNamespace(parsed.namespace, LIBRARY.PACKAGES) ;
+								o[name] = LIBRARY.CONSTRUCTORS[identifier] = constructor ;
+//console.dir(constructor) ;
+						},
+						id) ;
+ 
+						/*Recursively import the super type (if specified).*/
+ 
+						queueAdd(function(id) {
+//console.log('require-dependencies ("%s")', identifier) ;
+							var s ;
+							
+								if((s = LIBRARY.CONSTRUCTORS[identifier].reflect.extend))
+								{
+//console.log('extend-object: "%s"', s) ;
+										/*Create a new task chain for requiring the super type definition. Upon completion continue with this task chain.*/
+
+										s = definitionRequire(s) ;
+								 
+										queueAdd(function( ) { queueNext(id) ;}, s) ;
+								 
+								}
+								else queueNext(id) ;
+
+						},
+						id, true) ; // flagged as asynchronous in order to wait for the requirements to be resolved
+ 
+						/*Recursively import dependencies (if specified).*/
+ 
+						queueAdd(function(id) {
 						
-						while(--i >= 0) objectUse(a[i]) ;
+							var a, list ;
+								
+								if((a = LIBRARY.CONSTRUCTORS[identifier].require))
+								{
+//console.log('require-objects: %s', a) ;
+										list = arrayCopy(a, 0, a.length) ;
+								 
+										/*Iterate over the array of required definitions.*/
+										arrayEach(a, function(identifier, index, array) {
+										
+											var s ;
+											
+												s = definitionRequire(identifier) ;
+//console.log('require-object (#%s): "%s"', index, identifier) ;
+												queueAdd(function( ) {
+												
+														/*Once all requirements have been resolved continue with the parent definition requirement process.*/
+														
+														arrayRemove(list, list.indexOf(identifier)) ;
+														
+														if(array.length === 0) queueNext(id) ;
+														
+														
+												}, s) ;
+												
+										}) ;
+								}
+								else queueNext(id) ;
+
+						},
+						id, true) ;
+ 
+						/*Compile the definition source, define the object type and finish*/
+
+						queueAdd(function(wrapper) {
+//console.log('compile-definition ("%s")', identifier) ;
+								typeDefine(LIBRARY.CONSTRUCTORS[identifier], definitionCompile(identifier)) ;
+								
+//								queueNext(id) ;
+
+						},
+						id) ;
+ 
+						queueNext(id) ;
 
 				}
-
-				/*Queue the call to the constructor initializer since the dependencies may have not been resolved yet.*/
-
-				enqueue(function(id) {
-
-					// variables
-					
-					var host,
-						name ;
-				
-						/*Call the constructor initializer with the constructor function as context---if defined.*/
-						
-						if((f = o.init)) f.call(f) ;
-console.log('\thas-initializer: %s', !! f) ;						
-						/*Create the namespace corresponding to the object's package on the global object.*/
-						
-						host = objectCreateNamespace(identifier, CONSTANTS.GLOBAL_OBJECT) ;
-						name = o.name ;
-
-						/*If the constructor type is `'singleton'`, immediately create an instance and replace the constructor with this instance on the global object; otherwise set the constructor to its namespace on the global object.*/
-
-						if(o.type === CONSTANTS.CONSTRUCTOR_TYPE_SINGLETON) { o = host[name] = new constructor(null) ; }
-						else o = host[name] = constructor ;
-
-				}, false, true, '') ;
-
-		}
-		
-		function packageRequire(identifier)
-		{
-
-			// variables
-			
-			var request,
-				url,
-				a ;
-
-			//
-//console.log('::packageRequire ("%s", %s)', identifier, Meta.typeOf(identifier)) ;
-				/*Put a placeholder null value on the `PACKAGES` map in order to prevent redundant imports.*/
-				
-				PACKAGES[identifier] = null ;
-				
-				/*Request the package.*/
-
-/*@note: this is a convention; a custom package -> url mapping function should be made optional.*/
-
-				a = stringTokenize(identifier, CONSTANTS.CHARACTERS.DOT) ;
-
-//s = CONSTANTS.LIBRARY_ROOT + '/' + identifier.replace(/[.]/g, '/') + '.js?' + Date.now( ) ;
-				url = CONFIGURATION.LIBRARY_ROOT
-				+ CONSTANTS.CHARACTERS.SLASH
-				+ a.join(CONSTANTS.CHARACTERS.SLASH)
-				+ CONSTANTS.CHARACTERS.SLASH
-				+ a[a.length - 1] + '.js' ;
-
-/*@todo: this needs a fork for non browser contexts.*/
-
-				request = new CONSTANTS.DEFAULT_REQUEST( ) ;
-				
-				if(typeof request.overrideMimeType !== CONSTANTS.LITERAL_UNDEFINED) request.overrideMimeType('application/javascript') ;
-
-				request.onreadystatechange = function onreadystatechange( )
-				{
-					
-					// variables
-					
-					var parsed,
-						definitions,
-						s,
-						a ;
-					
-					//
-
-						if(request.readyState === 4)
-/*@todo: there needs to be a rollback on error.*/
-								if(request.status !== 200) { request.abort( ) ; Meta.error('Error requesting package: url="%s"', url) ; }
-								else
-								{
-
-										/*Parse the package content from the source string and validate it.*/
-										
-										parsed = packageParse(identifier, request.responseText) ;
-
-										if((s = parsed.package) !== identifier) throw new Error('Invalid package (requested="' + identifier + '", got="' + s + '")') ;
-										if(! (a = parsed.provide)) throw new Error('Missing required annotation (name="' + CONSTANTS.PACKAGE_ANNOTATION_PROVIDE + '"') ;
-										if(parsed.deprecated) throw new Error('Package has been deprecated (identifier="' + identifier + '")') ;
-
-										PACKAGES[identifier] = a ;
-										
-										/*Recursively require packages.*/
-
-										if((a = parsed.require)) arrayEach(a, function(value) { if(! (value in PACKAGES)) packageRequire(value) ; }) ;
-
-										/*Try to parse the package content.*/
-
-										try { definitions = new Function('return (' + parsed.source + ');').call(null) ; }
-										catch(error) { Meta.error('Error parsing package (package="%s"): %s', identifier, Meta.print(error)) ; }
-
-										/*Define the packages's objects.*/
-
-										a = parsed.provide ;
-
-										objectEach(definitions, function(definition, name) {
-										
-											// variables
-											
-											var f,
-												o ;
-											
-											//
-
-												if(a.indexOf(name) === -1) Meta.error('Package provides undeclared object (object-name="%s", package-identifier="%s")', name, identifier) ;
-
-												f = objectDefine(identifier, name, definition) ;
-												o = objectCreateNamespace(identifier + CONSTANTS.CHARACTERS.DOT + name, CONSTANTS.GLOBAL_OBJECT) ;
-												
-												/*If the constructor type is singleton, replace the constructor with an instance in order to conform to the singleton pattern.*/
-
-												if(definition.type === CONSTANTS.CONSTRUCTOR_TYPE_SINGLETON) o[name] = new f(null) ;
-												else o[name] = f ;
-
-										}) ;
-
-								}
-
-				} ;
-				request.open('GET', url, false) ;
-
-				/*Flag as XMLHttpRequest.*/
-				
-				request.setRequestHeader('Content-Type', 'XMLHttp/1.0') ;
-				request.setRequestHeader('X-Requested-With', 'XMLHttpRequest') ;
-
-				request.send(null) ;
-
-		}
-		
-		function packageParse(identifier, source)
-		{
-		
-			// variables
-			
-			var parsed = { },
-				i,
-				s ;
-				
-			//
-
-				/*Parse annotations.*/
-				
-//				parsed = packageParseAnnotations(identifier, source) ;
-				
-				if(source.indexOf(CONSTANTS.LITERAL_BLOCK_COMMENT_BEGIN) !== 0) throw new Error('Invalid package annotation. Leading string must be empty (identifier="' + identifier + '").') ;
-				if((i = source.indexOf(CONSTANTS.LITERAL_BLOCK_COMMENT_END, 2)) === -1) throw new Error('Invalid package annotation. Unterminated comment block (identifier="' + identifier + '")') ;
-				
-				s = source.substring(2, i) ;
-
-				arrayEach(
-						stringTokenize(stringTrim(s), '@'),
-						function(value, index) {
-						
-							// variables
-							
-							var a ;
-							
-							//
-
-								i = value.indexOf(' ') ;
-								a = stringTokenize(value.substring(i, value.length), ',') ;
-								
-								switch((s = value.substring(0, i)))
-								{
-										case CONSTANTS.PACKAGE_ANNOTATION_PACKAGE: parsed[s] = stringTrim(a[0]) ; break ;
-										default:
-										{
-										
-												parsed[s] = a ;
-												arrayEach(a, function(value, index, array) { array[index] = stringTrim(value) ; }) ;
-											
-										}
-								}
-
-						}
-				) ;
-
-				parsed.source = source ;
-
+ 
 			// return
-			
-			return parsed ;
-
-		}
-		
-		function packageParseAnnotations(identifier, source)
-		{ throw 'deprecated' ;
-
+ 
+			return id ;
+ 
+		} ;
+ 
+		/**
+		* Parse and validate an object source.
+		*/
+		CORE.definitionParse = definitionParse = function definitionParse(source)
+		{
+//console.log('definitionParse') ;
 			// variables
 			
 			var parsed = { },
@@ -1302,44 +1905,261 @@ console.log('\thas-initializer: %s', !! f) ;
 				a ;
 				
 			//
+
+				/*Parse annotation properties and definition container.*/
 				
-				if(source.indexOf(CONSTANTS.LITERAL_BLOCK_COMMENT_BEGIN) !== 0) throw new Error('Invalid package annotation. Leading string must be empty (identifier="' + identifier + '").') ;
-				if((i = source.indexOf(CONSTANTS.LITERAL_BLOCK_COMMENT_END, 2)) === -1) throw new Error('Invalid package annotation. Unterminated comment block (identifier="' + identifier + '")') ;
+				if(source.indexOf(CONSTANTS.LITERAL_BLOCK_COMMENT_BEGIN) !== 0) error('Invalid package annotation. Leading string must be empty (identifier="%s")', identifier) ;
+				if((i = source.indexOf(CONSTANTS.LITERAL_BLOCK_COMMENT_END, 2)) === -1) error('Invalid package annotation. Unterminated comment block (identifier="%s"', identifier) ;
 				
+				parsed.source = stringTrim(source.substring(i + 2, source.length)) ;
+				
+				/*Iterate over annotation properties.*/
+
 				s = source.substring(2, i) ;
 
 				arrayEach(
 						stringTokenize(stringTrim(s), '@'),
-						function(value, index) {
-
-								i = value.indexOf(' ') ;
-								a = stringTokenize(value.substring(i, value.length), ',') ;
-								
-								switch((s = value.substring(0, i)))
-								{
-										case CONSTANTS.PACKAGE_ANNOTATION_PACKAGE: parsed[s] = stringTrim(a[0]) ; break ;
-										default:
-										{
-										
-												parsed[s] = a ;
-												arrayEach(a, function(value, index, array) { array[index] = stringTrim(value) ; }) ;
-											
-										}
-								}
+						function(annotation, index) {
+						
+							var a ;
+							
+									a = definitionParseAnnotation(annotation, index) ;
+						  
+									parsed[a[0]] = a[1] ;
 
 						}
 				) ;
+				
+				assert((s = parsed.identifier), 'Illegal State: Missing required annotation (annotation-name="identifier")') ;
+
+				a = stringTokenize(s, CONSTANTS.CHARACTERS.DOT) ;
+				parsed.name = a[a.length - 1] ;
+ 
+				assert(a.length > 0, 'Illegal State: Identifier is invalid; no namespace ("%s")', s) ;
+ 
+				parsed.namespace = arrayCopy(a, 0, a.length - 1).join(CONSTANTS.CHARACTERS.DOT) ;
 
 			// return
 			
 			return parsed ;
 
+		} ;
+ 
+		CORE.definitionParseAnnotation = definitionParseAnnotation = function definitionParseAnnotation(annotation, index)
+		{
+ 
+			// variables
+ 
+				var parsed = [ ],
+					i,
+					name, value,
+					a ;
+				
+				//
+
+					/*Parse property name and value.*/
+					
+					if((i = annotation.indexOf(CONSTANTS.CHARACTERS.SPACE)) !== -1)
+					{
+ 
+							name = annotation.substring(0, i) ;
+							value = stringTrim(annotation.substring(i, annotation.length)) ;
+ 
+							parsed[0] = name ;
+
+							if(value.length === 0) parsed[1] = true ;
+							else
+							{
+
+									/*Switch depending on annotation name.*/
+
+									switch(name)
+									{
+											case CONSTANTS.ANNOTATION_IDENTIFIER: parsed[1] = value ; break ;
+											case CONSTANTS.ANNOTATION_REQUIRE || CONSTANTS.ANNOTATION_USE:
+
+													/*Split around the comma token.*/
+ 
+													a = stringTokenize(value, CONSTANTS.CHARACTERS.COMMA) ;
+													arrayEach(a, function(value, index, array) { array[index] = stringTrim(value) ; }) ;
+ 
+													parsed[1] = a ;
+													
+											break ;
+
+											default:
+											
+													switch(value)
+													{
+															case CONSTANTS.LITERAL_FALSE: parsed[1] = false ; break ;
+															case CONSTANTS.LITERAL_TRUE: parsed[1] = true ; break ;
+															default: parsed[1] = value ;
+													}
+											
+											break ;
+
+									}
+									
+							}
+
+					}
+					else parsed[0] = annotation, parsed[1] = true ;
+ 
+			// return
+ 
+			return parsed ;
+
+		} ;
+ 
+		/**Compile an object definition from its source.*/
+		CORE.definitionCompile = definitionCompile = function definitionCompile(identifier)
+		{
+ 
+			// preconditions
+ 
+			assert(isSet(identifier, LIBRARY.CONSTRUCTORS), 'Illegal State: Constructor is undefined ("%s")', identifier) ;
+ 
+			// variables
+ 
+			var constructor = LIBRARY.CONSTRUCTORS[identifier],
+				reflect = constructor.reflect,
+				s,
+				a1 = [ ], a2, names = [ ], values = [ ], // scope of the compiling function (the names are defined as formal parameter and the values passed as arguments)
+				definition ;
+ 
+			//
+ 
+				/*Add the names and constructors of required objects to the scope.*/
+ 
+				if((s = reflect.extend)) a1[0] = s ;
+				if((a2 = reflect.require)) a1.concat(a2) ;
+ 
+				if(a1.length > 0) {
+ 
+						arrayEach(a1, function(identifier) {
+						
+							var f ;
+						
+								assert(isSet(identifier, LIBRARY.CONSTRUCTORS), 'Illegal State: Constructor for required object is not defined ("%s")', identifier) ;
+								
+								f = LIBRARY.CONSTRUCTORS[identifier] ;
+								
+								names[names.length] = f.reflect.name ;
+								values[values.length] = f ;
+								
+						}) ;
+ 
+				}
+ 
+				/*Add the constructor to the scope.*/
+				
+				names[names.length] = reflect.name, values[values.length] = constructor ;
+				names[names.length] = stringFormat('return(%s);', reflect.source) ; // the body of the compiling function
+ 
+				/*The source string is now stored within the body of the compiling function and does not have to be stored on the constructor anymore.*/
+ 
+				delete reflect.source ;
+ 
+				/**/
+				
+				assert(names.length === values.length + 1, 'Illegal State: Scope names and values have invalid length') ;
+				assert(names.length <= 255, 'Illegal State: Scope exceeds limit of function arity.') ;
+
+				/*Compile the type definition passing the constructed scope.*/
+				
+				try { definition = (Function.apply(null, names)).apply(null, values) ; }
+				catch(e) { error('Compilation Error: Unable to compile source (identifier="%s")', identifier) ; }
+
+				assert(isObject(definition), 'Illegal State: Compilation did not return an object (type-identifier="%s").', identifier) ;
+ 
+			// return
+ 
+			return definition ;
+
+		} ;
+ 
+	//- Utility Operations
+		
+
+		
+		CORE.constant = constant = function constant(key) { return CONSTANTS[key] || null ; } ;
+
+		CORE.id = id = function id( )
+		{
+		
+			// variables
+			
+			var i, s ;
+			
+			//
+		
+				if((i = Date.now( )) === DATE) { COUNTER++ ; }
+				else { DATE = i ; COUNTER = 0 ; }
+
+				s = i + '-' + COUNTER ;
+
+			// return
+			
+			return s ;
+
+		} ;
+ 
+	// Get Configuration Data
+/*@deprecated
+	var e,
+		o1, o2,
+		s ;
+		
+		e = CONSTANTS.DEFAULT_DOCUMENT.documentElement ;
+		
+		if(! (o1 = e.dataset)) error('`Element.datatset` not supported.') ;
+		else {
+		
+				o2 = CONFIGURATION.KEYS ;
+
+				for(var key in o1)
+						if(typeof (s = o2[key]) !== CONSTANTS.TYPE_VOID) CONFIGURATION[s] = o1[key] ;
+						else error('Unknown configuration key (key="%s")', key) ;
+
 		}
+*/
+/*@deprecated: hacky
+	//- Resolve Configuration Settings
 	
-	// Native object extensions
+	var settings = CONFIGURATION.SETTINGS ;
+	
+	if(CONSTANTS.IS_BROWSER)
+	{
+
+		var d = CONSTANTS.DEFAULT_DOCUMENT.documentElement,
+			s = d.getAttribute('app-settings'),
+			a;
+console.log('app-settings: %s', s) ;
+			a = stringTokenize(s, ';') ;
+console.log(a) ;
+			arrayEach(a, function(setting, index) {
+console.log('setting (#%s): "%s", %s', index, setting, stringTokenize(setting, '=')) ;
+				var a = stringTokenize(setting, '='),
+					s1 = stringTrim(a[0]),
+					s2 = stringTrim(a[1]) ;
+console.log('setting-key: "%s"', s1) ;
+console.log('setting-value: "%s"', s2) ;
+					/*Override configuration setting in case of a valid key.*
+					if(isSet(s1, settings)) settings[s1] = s2 ;
+					else throw new Error('Unknown configuration key ("' + s1 + '")') ;
+
+			}) ;
+	}
+	else
+	{
+/*@todo non-browser fork*
+ throw new Error('Non-browser context currently not supported!') ;
+	}
+console.dir(settings) ;
+*/
+	// Browser Homogenization
 	//
 	// Extend native Object prototypes in order to bring them up to the latest ECMAScript standard and/or the Mozilla standard (where possible).
-	// All functions which potentially extend the standard are moved to the Meta object in order to avoid interference with other libraries.
 	// @link http://www.ecma-international.org/ecma-262/5.1/
 
 		if(typeof Object.defineProperty === CONSTANTS.LITERAL_UNDEFINED || CONFIGURATION.RUNNING_MODE === CONFIGURATION.RUNNING_MODES.DEBUG)
@@ -1388,13 +2208,23 @@ console.log('\thas-initializer: %s', !! f) ;
 								}
 						}
 				) ;
+				
+		if(! isSet('keys', Object) || CONFIGURATION.RUNNING_MODE === CONFIGURATION.RUNNING_MODES.DEBUG)
+				Object.defineProperty(
+						Object,
+						'keys',
+						{
+								value: function keys(object) { return objectKeys(object) ; }
+						}
+				) ;
 		
 		if(typeof Function.prototype.bind === CONSTANTS.LITERAL_UNDEFINED || CONFIGURATION.RUNNING_MODE === CONFIGURATION.RUNNING_MODES.DEBUG)
 				Object.defineProperty(
 						Function.prototype,
 						'bind',
 						{
-								value: function bind(context/*, argument...*/)
+								value: function bind(context/*, argument...*/) { return functionBind(this, context, arrayCopy(arguments, 1, arguments.length)) ; }
+								/*@deprecated: refactored into `functionBind`
 								{
 
 									// variables
@@ -1409,7 +2239,7 @@ console.log('\thas-initializer: %s', !! f) ;
 										if(arguments.length > 1)
 										{
 										
-												a = arrayCopy(arguments, 1) ;
+												a = arrayCopy(arguments, 1, arguments.length) ;
 												bound = function( ) { return f.apply(context, a.concat(Array.prototype.slice.call(arguments, 0))) ; } ;
 										
 										}
@@ -1418,9 +2248,9 @@ console.log('\thas-initializer: %s', !! f) ;
 									// return
 									
 									return bound ;
-
 								
 								}
+								*/
 						}
 				) ;
 
@@ -1433,17 +2263,8 @@ console.log('\thas-initializer: %s', !! f) ;
 						{
 								/**
 								* A proxy for `arrayEach`.
-								*
-								* @link arrayEach
 								*/
-								value: function forEach(callback, context)
-								{
-
-									//
-									
-										arrayEach(this, callback, context) ;
-
-								},
+								value: function forEach(callback, context) { arrayEach(this, callback, context) ; },
 								configurable: true,
 								writable: true,
 								enumerable: false
@@ -1456,30 +2277,9 @@ console.log('\thas-initializer: %s', !! f) ;
 						'every',
 						{
 								/**
-								* Iterate over the elements of an Array executing the given callback and breaking iteration if the callback returns false.
-								*
-								* The callback is executed for each element in the array passing the value, its index and this array just like in `Array.prototype.forEeach`. Unlike `Array.prototype.forEach` this function will immediately return with a false value upon the first false value returned by the passed callback and otherwise will return true.
-								*
-								* @implementation The implementation follows the ECMAScript language specification version 5 and up.
-								* @link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/every
-								*
-								* @param callback (Function) A callback function to be called for each element in the Array; the callback receives---in this order---the value, its index and the array itself via arguments.
-								* @context (Object) A context object; if specified, the callback function is executed within the context of the given object, i.e. the dynamic reference `this` will refer to the object.
-								* @return (Boolean) True, if the callback never returned false; false, if the callback returned false once.
+								* A proxy for `arrayEvery`
 								*/
-								value: function every(callback, context)
-								{
-								
-									//
-									
-										for(var i1 = -1, i2 = this.length ; ++i1 < i2 ; )
-												if(callback.apply(context, [this[i1], i1, this]) === false) return false ;
-											
-									// retrun
-									
-									return true ;
-
-								},
+								value: function every(callback, context){ return arrayEvery(this, callback, context) ; },
 								configurable: true,
 								writable: true,
 								enumerable: false
@@ -1494,61 +2294,13 @@ console.log('\thas-initializer: %s', !! f) ;
 								/**
 								* @link {arraySome}
 								*/
-								value: function some(callback, context)
-								{
-								
-									//
-									
-										return arraySome(this, callback, context) ;
-								
-								},
+								value: function some(callback, context) { return arraySome(this, callback, context) ; },
 								configurable: true,
 								writable: true,
 								enumerable: false
 						}
 				) ;
-/*
-		if(! isSet('equals', Array.prototype))
-				/**
-				* Tests the host array for equality with the given object using the given comparator function or the strict equality operator.
-				*
-				* A comparator must be a callback as specified in `Array.prototype.every` that returns a boolean value. If the comparator returns false once, the array is not equal to the given object (in case it is an array as well).
-				*
-				* @param object (Object) An object to compare this array to for equality.
-				* @param comparator [optional] (Function) A comparator function.
-				*
-				* @return (Boolean) True, if the given object is an array with same size as this array and every element is equal to every element within this array as specified by the given comparator or the strict equality operator; false, otherwise.
-				*
-				Array.prototype.equals = function equals(object, comparator)
-				{
-					
-					// variables
-					
-					var f ;
-					
-					//
-					
-						if(object instanceof Array)
-						{
-						
-								if(this.length < object.length) return false ;
-								else {
-								
-										if(this.isFunction(comparator)) f = comparator ;
-										else f = function(value, index) { return value === object[index] ; }
 
-										return this.every(f) ;
-										
-								}
-
-						}
-
-					// return
-					
-					return false ;
-				
-				} ;
-*/
 		if(typeof Array.prototype.indexOf === CONSTANTS.LITERAL_UNDEFINED || CONFIGURATION.RUNNING_MODE === CONFIGURATION.RUNNING_MODES.DEBUG)
 				Object.defineProperty(
 						Array.prototype,
@@ -1580,923 +2332,49 @@ console.log('\thas-initializer: %s', !! f) ;
 								enumerable: false
 						}
 				) ;
-
-/*
-		if(! isSet('isUpperCase', String.prototype))
-				/**
-				* @note the strict equality operator `===` cannot be used here as `toLocaleUpperCase` returns a different String Object.
-				* @link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Comparison_Operators
-				/
-				String.prototype.isUpperCase = function isUpperCase( ) { return isSet('toLocaleUpperCase', this) ? this.toLocaleUpperCase( ) == this : this.toUpperCase( ) == this ; }
-
-		if(! isSet('isLowerCase', String.prototype))
-				/**
-				* @note the strict equality operator `===` cannot be used here as `toLocaleLowerCase` returns a different String Object.
-				* @link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Comparison_Operators
-				/
-				String.prototype.isLowerCase = function isLowerCase( ) { return isSet('toLocaleLowerCase', this) ? this.toLocaleLowerCase( ) == this : this.toLowerCase( ) == this ; }
-				
-		if(! isSet('format', String.prototype))
-				/**
-				* @implementation The host string is tokenized using the percentage sign `'%'` as token delimiter to avoid using regular expressions.
-				/
-				String.prototype.format = function format(substitute_1/*, ..., substitute_n*)
-				{
-					return stringFormat.apply(null, [this].concat(arrayCopy(arguments))) ;
-				}
-
-		if(! isSet('quote', String.prototype))
-				String.prototype.quote = function( )
-				{
-						return stringQuote(this) ;
-				} ;
-*/
-
-	// Define Meta
-	
-	var Meta ;
-	
-		/**
-		* The `Meta` function.
-		*
-		* This function adds potentially namespaced Objects (e.g. 'a.b.c.d.E') under short names (e.g. 'E') to the local scope of the callback by passing them as arguments.
-		* In order to do that, this function expects a callback with a non-empty formal parameter list. The formal parameter list is parsed in order to match the declared names with objects in the library. When invoking the callback, the objects matching the names are passed to it in the defined order as arguments. The scope of the callback then contains short name references to the objects matching the declared names.
-		*
-		* @link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions_and_function_scope
-		*
-		* @param (Function) callback The callback to be executed.
-		*/
-		Meta = function Meta(callback)
-		{
-
-			// variables
-			
-			var a1, a2,
-				s,
-				i,
-				f ;
-			
-			//
-
-				/*Parse the formal parameter list specified while creating the the callback function.*/
-
-				s = callback.toString( ) ;
-				i = s.indexOf('(') ;
-				a1 = stringTokenize(s.substring(i + 1, s.indexOf(')', i)), ',') ;
-
-				a2 = [ ] ;
-
-				arrayEach(a1, function(alias, index) {
-					
-					// variables
-					
-					var s ;
-					
-					//
-					
-						s = stringTrim(alias) ;
-
-						if((s = ALIAS.TO_ID[s])) a2[a2.length] = objectResolveNamespace(s, CONSTANTS.GLOBAL_OBJECT) ;
-						else throw new Error('Undefined alias (alias="' + alias + '")') ;
-
-				}) ;
-
-				callback.apply(null, a2) ;
-
-		} ;
 		
-		Meta.require = function require(identifier/*, ..., identifier*/)
-		{
-
-			//
-
-				arrayEach(arguments, function(value) {
-						if(! (value in PACKAGES)) packageRequire(value) ;
-				}) ;
-/*
-				i = arguments.length ;
-
-				while(--i >= 0)
-				{
-				
-						s = arguments[i] ;
-console.log('\trequire-package: "%s"', s) ;
-						if(! (s in PACKAGES))
-						{
-						
-								/*Flag the package as required in order to prevent redundant imports.*
-								
-								PACKAGES[s] = true ;
-						
-								enqueue(function( ) { packageRequire(s) ; }, true, true) ;
-								
-						}
-
-				}
-*/
-			// return
-			
-			return this ;
-		
-		} ;
-
-		/**
-		* A proxy for `objectUse`.
-		* @deprecated: this does the wrong thing.
-		*/
-		Meta.use = function use(identifier, alias)
-		{ 		
-console.log('Meta::use("%s", "%s")', identifier, alias) ;
-			// variables
-			
-			var i,
-				s1, s2,
-				a ;
-
-			//
-
-				/*Parse the package identifier.*/
-				
-				if((i = identifier.lastIndexOf('.')) === -1) throw new Error('Invalid identifier (identifier="' + identifier + '")') ;
-				
-				s1 = identifier.substring(0, i) ;
-				
-				/*...*/
-				
-				if(typeof (a = PACKAGES[s1]) === CONSTANTS.LITERAL_UNDEFINED) throw new ReferenceError('Package is undefined (package-identifier="' + s + '")') ;
-
-				if((s2 = identifier.substring(i + 1)) === CONSTANTS.CHARACTERS.ASTERISK) arrayEach(a, function(value, index) { var s = s1 + '.' + value ; ALIAS.TO_ID[value] = s ; ALIAS.FOR_ID[s] = value ; }) ;
-				else ALIAS.TO_ID[s2] = identifier, ALIAS.FOR_ID[identifier] = s2 ;
-
-			// return
-							
-			return this ;
-		
-		} ;
-
-		Meta.define = function define(definition)
-		{
-
-			// preconditions
-
-				if(typeof definition.package === CONSTANTS.LITERAL_UNDEFINED) throw new ReferenceError('Invalid object definition. Missing required property "package".') ;
-				if(typeof definition.name === CONSTANTS.LITERAL_UNDEFINED) throw new ReferenceError('Invalid object definition. Missing required property "name".') ;
-			
-			// variables
-			
-			var o,
-				f,
-				s ;
-
-			//
-			
-				o = objectCreateNamespace(definition.package + '.' + definition.name, CONSTANTS.GLOBAL_OBJECT) ;
-
-				/*Add the object to the library. In case of a singleton constructor type replace the constructor with its instance.*/
-				
-				f = objectDefine(definition.package, (s = definition.name), definition) ;
-				
-				if(definition.type === CONSTANTS.CONSTRUCTOR_TYPE_SINGLETON) o[s] = new f( ) ;
-				else o[s] = f ;
-
-			// return
-			
-			return this ;
-
-		} ;
-
-	// Type identification utility functions.
-
-		/**
-		* The MS implementation of the strict equality operator will fail if an undeclared reference is evaluated; using `typeof` will work cross-browser)
-		* @link http://msdn.microsoft.com/en-us/library/259s7zc1(v=vs.94).aspx
-		* @param (Object) object An Object.
-		* @return Boolean
-		*/
-		Meta.isVoid = function isVoid(object)
-		{
-			return typeof object === CONSTANTS.LITERAL_UNDEFINED ;
-		} ;
-		/**
-		* Returns true if the given object contains a property for the given key.
-		*
-		* Use this instead of `isVoid` to test for a property of core Objects in order to avoid errors.
-		*
-		* @note IE 8 fails with a ``Object does not support property or method'' error if an undefined property is accessed; hence the try-catch block.
-		* @param (String) key A key String.
-		* @param (Object) object An Object.
-		* @return Boolean
-		*/
-		Meta.isSet = function isSet(key, object)
-		{
-				try { return ! this.isVoid(object[key]) ; }
-				catch(e) { return false ; }
-		} ;
-		/**
-		* Test whether the given Object is a null value.
-		*
-		* @param (Object) object An Object.
-		* @return Boolean
-		*/
-		Meta.isNull = function isNull(object)
-		{
-			return object === null ;
-		} ;
-		/**
-		* Test whether the given Object is an instance of Boolean.
-		*
-		* @param (Object) object An Object.
-		* @return Boolean
-		*/
-		Meta.isBoolean = function isBoolean(object)
-		{
-			return typeof object === 'boolean' ;
-		} ;
-		/**
-		* Test whether the given Object is an instance of Number.
-		*
-		* This method returns `false` for a `NaN` value. Use `isNaN` to test for a `NaN` value.
-		*
-		* @param (Object) object An Object.
-		* @return Boolean
-		*/
-		Meta.isNumber = function isNumber(object)
-		{
-			return typeof object === 'number' ? isNaN(object) ? false : true : false ;
-		} ;
-		/**
-		* Test whether the given Object is an instance of Number for an integer value.
-		*
-		* @param (Object) object An Object.
-		* @return Boolean
-		*/
-		Meta.isInteger = function isInteger(object)
-		{
-
-			//
-
-				if(this.isNumber(object)) return (object % 1) === 0 ;
-
-				else return false ;
-
-		} ;
-		/**
-		* Test whether the given Object is an instance of Number for a float value.
-		*
-		* Floating point numbers whose fractional part is zero (e.g. `1.0`) are treated as integers.
-		*
-		* @param (Object) object An Object.
-		* @return Boolean
-		*/
-		Meta.isFloat = function isFloat(object)
-		{
-		
-			//
-			
-				if(this.isNumber(object)) return (object % 1) !== 0 ;
-				else { return false ; }
-
-		} ;
-		/**
-		* Test whether the given Object is an instance of String
-		*
-		* @param (Object) object An Object.
-		* @return Boolean
-		*/
-		Meta.isString = function isString(object)
-		{
-			return typeof object === 'string' ;
-		} ;
-		/*
-		* Test whether the given object is an instance of Object.
-		*
-		* @param (Object) object An Object.
-		* @return Boolean
-		*/
-		Meta.isObject = function isObject(object)
-		{
-			return typeof object === 'object' ? Object.prototype.toString.call(object) ===	CONSTANTS.OBJECT_TAG : false ;
-		} ;
-		/*
-		* Test whether the given object is an instance of Function.
-		*
-		* @param (Object) object An Object.
-		* @return Boolean
-		*/
-		Meta.isFunction = function isFunction(object)
-		{
-			return typeof object === 'function' ? Object.prototype.toString.call(object) === CONSTANTS.FUNCTION_TAG : false ;
-		} ;
-		/*
-		* Test whether the given object is an instance of Array.
-		*
-		* @param (Object) object An Object.
-		* @return Boolean
-		*/
-		Meta.isArray = function isArray(object)
-		{
-			return object instanceof Array ;
-		} ;
-		/*
-		* Test whether the given object is an instance of Date.
-		*
-		* @param (Object) object An Object.
-		* @return Boolean
-		*/
-		Meta.isDate = function isDate(object)
-		{
-			return this.instanceOf(Date, object) ;
-		} ;
-		/*
-		* Test whether the given object is an instance of RegExp.
-		*
-		* @param (Object) object An Object.
-		* @return Boolean
-		*/
-		Meta.isRegExp = function isRegExp(object)
-		{
-			return this.instanceOf(RegExp, object) ;
-		} ;
-		/*
-		* Test whether the given object is an instance of Error.
-		*
-		* @param (Object) object An Object.
-		* @return Boolean
-		*/
-		Meta.isError = function isError(object)
-		{
-			return this.instanceOf(Error, object) ;
-		} ;
-		/*
-		* Test whether the given object is a node type. 
-		*
-		* In case the DOM implementation does not provide a (public) `Node` constructor function, the type test is applied using using duck typing for the `.nodeName` and `.nodeType` attributes of the given object.
-		*
-		* @param (Object) object An object.
-		* @return Boolean
-		*/
-		Meta.isNode = function isNode(object)
-		{
-			return typeof Node === 'function' ?
-						object instanceof Node :
-						typeof Node === typeof object && ! Meta.isObject(object) && Meta.isString(object.nodeName) && Meta.isInteger(object.nodeType) ;
-		} ;
-		/*
-		* Test whether the given Object is the Window Object.
-		*
-		* @param (Object) object An object.
-		* @return Boolean
-		*/
-		Meta.isWindow = function isWindow(object)
-		{
-		
-			// variables
-			
-			var s ;
-			
-			//
-			
-				s = Object.prototype.toString.call(object) ;
-
-				if(s === '[object ' + CONSTANTS.TYPE_WINDOW + ']') { return true ; }
-
-			// return
-			
-			return false ;
-
-		} ;
-		/**
-		* Return a String type identifying the given Object's type.
-		*
-		* @param (Object) object An object.
-		* @return Boolean
-		*/
-		Meta.typeOf = function typeOf(object)
-		{
-
-			// variables
-
-			var s ;
-
-			//
-
-				/* First things first, exclude `null` and `undefined`.*/
-
-				if(this.isVoid(object)) { return CONSTANTS.TYPE_VOID ; }
-				else if(this.isNull(object)) { return CONSTANTS.TYPE_NULL ; }
-				else {
-
-						if(this.isFunction(object) ) { return CONSTANTS.TYPE_FUNCTION ; }
-						else if(this.isBoolean(object)) { return CONSTANTS.TYPE_BOOLEAN ; }
-						else if(this.isNumber(object)) { return this.isFloat(object) ? CONSTANTS.TYPE_FLOAT : CONSTANTS.TYPE_INTEGER ; }
-						else if(this.isString(object)) { return CONSTANTS.TYPE_STRING ; }
-						else if(this.isDate(object)) { return CONSTANTS.TYPE_DATE ; }
-						else if(this.isRegExp(object)) { return CONSTANTS.TYPE_REGEXP ; }
-						else if(this.isError(object)) { return CONSTANTS.TYPE_ERROR ; }
-						else if(this.isNode(object)) { return CONSTANTS.TYPE_NODE ; }
-						else {
-						
-								/*Parse the object tag for the type name.*/
-
-								s = Object.prototype.toString.call(object) ;
-								s = s.substring(8, s.length - 1) ;
-
-								switch(s) {
-										case CONSTANTS.TYPE_ARRAY: return CONSTANTS.TYPE_ARRAY ; break ;
-										case CONSTANTS.TYPE_WINDOW: return CONSTANTS.TYPE_WINDOW ; break ;
-										/*Instances of a constructor function identify as Objects even though they might have overriden `Object.prototype.toString`; in this case we use the name of the constructor's ''name'' property to identify the type or default to `Object`.*/
-										case CONSTANTS.TYPE_OBJECT: return !! object.constructor ? object.constructor.name : s ; break ;
-										default: return 'Unknown' ;
-								}
-
-						}
-
-				}
-
-			// return
-
-			return null ;
-
-		} ;
-		/**
-		* Return a `Boolean` value indicating whether the Object referenced by `b` has a sub-type or same type relation to the object referenced by `a`. 
-		*
-		* This function builds upon the functionality of the `instanceof` operator. If `a` is an object, then `b` is compared to `a`'s constructor; in any other case the objects are directly compared. 
-		* The `instanceof` operator returns true if and only if `o instanceof f` satifies the following conditions: (1) `o` is an Object; (2) `f` is a Function; (3) the creation of `o` involves a call to `f` somewhere in the prototype chain (`f` may also be the constructor).
-		* In any case `b` must be an Object instance, not a Function.
-		* @implementation We do not directly test for `.isFunction(a)` because (at least) Safari implements the constructors of some core types (e.g. `NodeList`) as something else than `Function` sub-types. This makes this function return the wrong result in a test like `Meta.instanceOf(nodes, NodeList)` (where `nodes` is a `NodeList` instance).
-		* @param a (Object, Function) A potential super-type constructor or super-type instance.
-		* @param b (Object) A potential sub-type instance.
-		* @return (Boolean) True, if `a` is a super-type of `b`
-		*/
-		Meta.instanceOf = function instanceOf(a, b)
-		{
-
-			//
-				
-				if(this.isObject(a)) { return b instanceof a.constructor ; }
-				else return b instanceof a ;
-				
-			//
-			
-			return false ;						
-				
-		} ;
-		
-	// Logging and code flow utility functions.
-
-		Meta.log = function log(object/*, substitute...*/)
-		{
-
-			// variables
-
-			var	s ;
-
-			// 
-
-				if(this.isSet('console', CONSTANTS.GLOBAL_OBJECT))
-				{
-				
-						if(this.isString(object)) { console.log.apply(null, arguments) ; return ; }
-						
-						if(this.instanceOf(Error, object)) {
-				
-								s = objectPrint(object) ;
-								
-								if(object.stack) { s += '\n' + object.stack ; }
-								
-						}
-						else { s = objectPrint(object) ; }
-						
-						console.log(s) ;
-				
-				}
-
-
-			// return
-
-			return this ;
-
-		} ;
-		Meta.debug = function debug(identifier)
-		{
-		
-				try {
-						Meta.error(identifier) ;
-				}
-				catch(error) { Meta.log(error) ; }
-
-		} ;
-		/**
-		* Throw a generic error. 
-		*
-		* String substitution for the error message applies.
-		* 
-		* @example `Meta.error("Invalid type for parameter: %s", Meta.typeOf(object));`
-		*/
-		Meta.error = function error(message/*, substitute...*/)
-		{
-		
-			// variables
-			
-			var s ;
-			
-			//
-			
-				if(arguments.length > 1) s = stringFormat.apply(null, arguments) ;
-				else s = message ;
-
-				throw new Error(s) ;
-				
-		} ;
-		/*
-		* A convenience method which throws a generic error passing the given error message if the result of evaluating the assertion expression (passed as the first argument) is negative.
-		*
-		* String substitution for the error message applies.
-		*
-		* @example `Meta.assert(i < 100, "Limit exceeded (limit=%s).", i)`;
-		* @param assertion (Boolean) The result of evaluating an assertion expression.
-		* @param message (String) The error message to be thrown if the assertion expression evaluated to `false`.
-		* @param substitute (Object...) A varying number of elements used to format the error message.
-		* @return (this)
-		*/
-		Meta.assert = function assert(assertion, message/*, substitute...*/)
-		{
-		
-			// variables
-			
-			var s ;
-			
-			//
-
-				if(! assertion)
-				{
-				
-						if(arguments.length > 2) s = stringFormat(message, Array.prototype.slice.call(arguments, 2)) ;
-						else s = message ;
-						
-						throw new Error(s) ;
-						
-				}
-				
-			// return
-			
-			return this ;
-
-		} ;
-			
-	// Object utility functions.
-	
-		Meta.print = function print(object, options)
-		{
-		
-			// variables
-			
-			var s,
-				b,
-				i ;
-			
-			//
-
-				s = objectPrint(object) ;
-
-				if(! options || (options && (! this.isNumber(options.depth) || --options.depth >=0)))
-				{
-				
-						if(s === CONSTANTS.OBJECT_TAG)
-						{
-
-								s = '' ;
-								
-								objectEach(object, function(value, key) { s += (s === '' ? '' : ', ') + key + '=' + this.print(value, options) ; }, this) ;
-								
-								s = '{' + s + '}' ;
-								
-						}
-						else if(s === CONSTANTS.ARRAY_TAG)
-						{
-
-								s = '' ;
-								
-								arrayEach(object, function(value, index) { s += (index > 0 ? ', ' : '') + this.print(value, options) ; }, this) ;
-								
-								s = '[' + s + ']' ;
-							
-						}
-						
-				}
-				
-				if(options && (typeof options.length !== CONSTANTS.LITERAL_UNDEFINED && s.length > options.length)) s = s.substring(0, options.length) + '...' ;
-
-			// return
-			
-			return s ;
-		
-		} ;
-
-		/**
-		* Create a new Object.
-		* @link https://developer.mozilla.org/en-US/docs/JavaScript/Reference/Global_Objects/Object/create
-		* @param prototype [optional] (Object) A prototype Object whose properties to to copy.
-		* @return Object
-		*/
-/*@deprecated: moved to Object#create*/
-		Meta.create = function create(prototype) { throw 'Deprecated' ; return objectCreate(prototype) ; }
-		
-		/**
-		* Extend the given object with the given property.
-		*
-		* Only the specification properties `property` and `value` are available cross-browser; all other properties need to be used with provision of a fallback for legacy and non-standard implementations of the ECMAScript standard.
-		*
-		* @param (Object) object An Object to extend with the given property and value.
-		* @param (Object) specification An Object specifying at least the property and value to extend the given Object with. 
-		*/
-/*@deprecated: moved to Object#defineProperty*/
-		Meta.extend = function extend(object, specification)
-		{
-throw 'Deprecated' ;
-			// preconditions
-			
-			if(! this.isSet(specification.property)) throw new Error('Missing specification property (name="property")') ;
-			if(! this.isSet(specification.value)) throw new Error('Missing specification property (name="value")') ;
-		
-			//
-
-				objectExtend(object, specification) ;
-				
-			// return
-			
-			return object ;
-
-		
-		} ;
-
-		/**
-		* Parses a literal value from a string representation.
-		*
-		* @param (String) string A string for a literal.
-		* @return Object
-		*/
-/*@deprecated*/
-		Meta.parse = function parse(string)
-		{ throw 'Deprecated' ;
-
-			// variables
-
-			var o = null ;
-
-			// 
-			
-				try {
-				
-						o = Function("return " + string + ";")
-						.call(null) ;
-						
-				}
-				catch(e) { o = string ; }
-
-			// return
-
-			return o ;
-
-		} ;
-/*@todo: remove*/
-/*@deprecated*/
-		Meta.keys = function keys(object)
-		{ throw 'Deprecated' ;
-		
-			// variables
-			
-			var a = null, s ;
-			
-			// 
-			
-				if( this.isObject(object) || this.isFunction(object) ) {
-				
-						if(Object.prototype.getOwnPropertyNames) { a = object.getOwnPropertyNames( ) ; }
-						else {
-						
-								a = [ ] ;
-								
-								for(s in object) { a[a.length] = s ; }
-
-						}
-
-				}
-			
-			// return
-			
-			return a ;
-		
-		} ;
-		/**
-		* An iterator for the standard iterable Objects. This method will iterate arrays, Array-like objects and objects.
-		* @param object (Object) The iterable Object
-		* @param callback (Function) The function to call on each entry in the iterable Object. The callback will receive the value for the key or index, the key or index itself and a reference to the object iterated over in this order.
-		* @param context (Object) [optional] The Object to be used as the value of `this` in the callback Function
-		* @return this
-		*/
-		Meta.each = function each(object,callback,context)
-		{
-
-			//
-
-				if(Meta.isArray(object)) arrayEach(object, callback, context) ;
-				else objectEach(object, callback, context) ;
-/*
-				{
-				
-						for(var i1 = -1, i2 = object.length ; ++i1 < i2 ; )
-								if(callback.apply(o, [i1, object[i1]]) === false) break ;
-
-				}
-				else {
-
-						for(s in object)
-								if(callback.apply(o, [s,object[s]]) === false) break ;
-				
-				}
-*/
-			// return
-
-			return this ;	
-			
-		} ;
-		/**
-		* Merge two iterable Objects. This function adds or replaces values on the first given Object in case a mapping for a key exists in the second given Object. The return value is the first passed Object.
-		* @param A (Object) An iterable Object.
-		* @param B (Object) Another iterable Object.
-		* @param override (Boolean,Function) `Boolean` flag to indicate whether existing properties of the first given `Object` shall be replaced by those of the second given `Object`; or a `Function` for more sophisticated override algorithms.
-		* @return Object
-		*/
-/*@todo: remove or split up and move to core objects (Object.merge, Array.merge, ...)*/
-/*@deprecated*/
-		Meta.merge = function merge(A, B, override)
-		{ throw 'Deprecated' ;
-
-			// variables 
-			
-			var b1, b2, a = null ;
-
-			// 
-
-				b1 = this.isFunction(override) ;
-				b2 = (!! override) ;
-
-				if(b1) { a = [null,A,B] ; }
-
-				/*@Note("If a `Function` was passed as the `override` parameter overriding is supposed to be handled by passing
-				the current key, the target and the iterated `Object` to the callback. Otherwise the property on the target is
-				overriden if and only if the `override` parameter was evaluated to a `Boolean` true value.")*/
-
-				Meta.each(
-						B,
-						function anonymous$merge(key,value) {
-
-							var o ;
-
-								if(b1) {
-								
-										a[0] = key ;
-
-										if( override.apply(Meta.DEFAULT_VIEW,a) === false ) { return false ; }
-								
-								}
-								else if(  b2  ||  Meta.isVoid( A[key] )  ) { A[key] = value ; }
-
-						}
-				) ;
-				
-			// return
-
-			return A ;
-						
-		} ;
-		/**
-		* Copy an iterable object. This function only performs a shallow copy
-		* @param object (Object,Array) An iterable object.
-		* @return Object
-		*/
-/*@todo: remove or move move to core objects.*/
-/*@deprecated*/
-		Meta.copy = function copy(object)
-		{ throw 'Deprecated' ;
-			// variables
-
-			var o = null ;
-
-			//
-			
-				/*All Arrays are Objects. So, the order of type checking is important here.*/
-
-				if(this.isArray(object)) { o = array_copy(object) ; }
-				else if(this.isObject(object)) { o = { } ; this.merge(o, object) ; }
-				else if(this.isFunction(object)) { o = function_copy(object) ; }
-
-			// return
-
-			return o ;
-
-		} ;
-		/**
-		* Return a Boolean value indicating whether the object accessible on the target object using the given String is set, i.e. if it is not undefined.
-		* @param (String) identifier An identifier `String`.
-		* @param (Object) object An object.
-		* @return Boolean
-		*/
-		Meta.has = function has(identifier, object)
-		{
-				return ! Meta.isVoid(objectResolveNamespace(identifier, object)) ;
-		} ;
-		/**
-		* Evaluate a namespaced object identifier string on a given object (e.g. "name.space.Object.property") on a given Object.
-		*
-		* This method returns null for undefined properties. If you need if a property for a given identifier is not set use Meta::has instead.
-		*
-		* @param path (String) A namespace object identifier string.
-		* @param object (Object) The target Object for the identifier evaluation.
-		* @return Object
-		*/
-		Meta.get = function get(identifier, object)
-		{
-				return objectResolveNamespace(identifier, object) || null ;
-		} ;
-		/**
-		* Evaluate a namespaced object identifier (e.g. "name.space.Object.property") on a given Object and sets its value.
-		*
-		* This function returns a boolean value indicating whether the object was set, i.e. in case the namespace could be created.
-		*
-		* @param identifier (String) The namespace identifier to set the given value to.
-		* @param value (Object) The value to be set.
-		* @param object (Object) The target Object.
-		* @return void
-		*/
-		Meta.set = function set(identifier, value, object)
-		{
-
-			// variables
-			
-			var o, s, i = 0 ;
-			
-			//
-			
-				if((i = identifier.lastIndexOf('.')) !== -1)
-				{
-				
-						if((o = objectCreateNamespace(identifier.substring(0, i), object)))
-						{
-
-								if((s = identifier.substring(i + 1, identifier.length)))
-								{
-
-										o[s] = value ;
-
-									return true ;
-								
-								}
-
-						
-						}
-				
-				}
-
-			// return
-			
-			return false ;
-
-		} ;
-		
-	// Library set-up utility functions.
-		
-		/**
-		* {@link createID}
-		*/
-		Meta.createID = createID ;
-		
-	// Other functions.
-		
-		Meta.configuration = function configuration(key) { return CONIFGURATION[key] ; }
-		Meta.constant = function constant(key) { return CONSTANTS[key] ; }
-
-	// Globalize Meta.
-		
-		switch(CONFIGURATION.CONFLICT_MODE)
-		{
-		
-				case 'override': CONSTANTS.GLOBAL_OBJECT.$ = CONSTANTS.GLOBAL_OBJECT.Meta = Meta ; break ;
-				case 'resolve': CONSTANTS.GLOBAL_OBJECT.Meta = Meta ; break ;
-				default: throw new Error('Invalid conflict mode (conflict-mode="' + CONFIGURATION.CONFLICT_MODE + '")') ;
-		
-		}
-		
-	// Require, Use Defaults
-	
-	var a ;
-	
-		if((a = CONFIGURATION.REQUIRE_DEFAULT)) { Meta.require.apply(Meta, a) ; }
-		
-		if((a = CONFIGURATION.USE_DEFAULT)) { Meta.use.apply(Meta, a) ; }
-
-})(CONFIGURATION) ;
-
-delete this.CONFIGURATION ;
+	// Retrieve And Apply Configuration
+
+	requestSend(
+			requestCreate({
+					mime: CONSTANTS.MIME_JSON,
+					done: function (properties)
+					{
+/*@qnd*/
+var o = Function('return(' + properties.request.responseText + ');')(),
+	s,
+	f ;
+
+if((s = o[CONFIGURATION.LIBRARY_ROOT])) CONFIGURATION.SETTINGS[CONFIGURATION.LIBRARY_ROOT] = s ;
+else error('Illegal State: Missing required configuration setting in configuration file ("%s")', CONFIGURATION.LIBRARY_ROOT) ;
+
+if((s = o[CONFIGURATION.APPLICATION_ROOT])) CONFIGURATION.SETTINGS[CONFIGURATION.APPLICATION_ROOT] = s ;
+else error('Illegal State: Missing required configuration setting in configuration file ("%s")', CONFIGURATION.APPLICATION_ROOT) ;
+
+s = definitionRequire(CONFIGURATION.SETTINGS[CONFIGURATION.APPLICATION_ROOT]) ;
+
+queueAdd(function( ) {
+
+console.log('library:') ;
+console.dir(LIBRARY.PACKAGES) ;
+console.log('o0O0o0O0o0O0o0O0o0O0o\n^application-start!^\no0O0o0O0o0O0o0O0o0O0o') ;
+f = constructorOf(CONFIGURATION.SETTINGS[CONFIGURATION.APPLICATION_ROOT]) ;
+var o = new f(null) ;
+console.dir(o) ;
+
+}, s) ;
+
+					},
+					error: function(properties) {
+console.log('error! :c') ;
+					}
+			}),
+			{
+					url: '/configuration.json',
+					method: CONSTANTS.HTTP_METHOD_GET,
+					async: true,
+					flag: true				
+			}
+	) ;
+
+})(this) ;
