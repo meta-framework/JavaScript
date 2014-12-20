@@ -1,30 +1,38 @@
 /*
 @identifier org.meta.util.Tokenizer
-@extend org.meta.standard.Object
+@extend org.meta.Object
 */
 {
 		main: function main(string) { this.string = string ; },
+		global:
+		{
+				create: function create(string) { return new this(string) ; }
+		},
 		local:
 		{
-				tokenize: function tokenize(sequence, callback)
+				tokenize: function tokenize(token, callback)
 				{
-				
+console.log('Tokenizer.tokenize(%s)', token) ;
 					// variables
 					
-					var i1 = 0, i2 = 0, i3 = sequence.length, i4 = this.string.length, i5 = -1 ;
+					var index = 0, last = 0, skip = token.length, counter = -1, stop ;
 					
 					//
 					
-						while((i1 = this.string.indexOf(sequence, i2)) !== -1)
+						/*Find indexes for the given delimiter and gather leading substrings.*/
+						while((index = this.string.indexOf(token, last)) !== -1)
 						{
 						
-								callback.apply(null, [this.string.substring(i2, i1), ++i5]) ;
+								callback.apply(null, [this.string.substring(last, index), ++counter]) ;
 								
-								i2 = i1 + i3 ;
+								last = index + skip ;
 								
 						}
-						
-						if(i2 + 1 < i4) callback.apply(null, [this.string.substring(i2, i4), ++i5]) ;
+					
+						/*Gather a potential trailing substring after the last delimiter's index (or the start index if none was found).*/
+						stop = this.string.length ;
+					
+						if(last + 1 < stop) callback.apply(null, [this.string.substring(last, stop), ++counter]) ;
 				
 				}
 		}

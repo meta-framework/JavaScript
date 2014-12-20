@@ -10,79 +10,152 @@
 {
 		global:
 		{
-				create: function create(url)
-				{
-				
-					// variables
-					
-					var url,
-						a1, a2,
-						s ;
-						
-					//
-					
-						/*Prefix the a placeholder null scheme for URL strings without scheme part (which are invalid as URIs) to be able to use the `URI::parseURI` operation without syntax error.*/
-						
-						if(url.charAt(0) === '/') s = 'null:' + (url.charAt(1) === '/' ? url : '//' + url) ;
-					
-						url = new this(null) ;
-						
-						a1 = URI.parseURI(url) ;
-						
-						/*Parse general URL parts.*/
-						
-						if((s = a1[0]) !== 'null') url.setScheme(s) ;
-						else url.setScheme(null) ;
-						
-						uri.setPath(a1[3]) ;
-						uri.setFragment(a1[5]) ;
-						
-						/*Parse Authority.*/
-						
-						if((s = a1[2]))
+				/**@todo additional URL validation; revision on the homogenization branch for this constructor.*/
+				create: (function( ) {
+						if(isSet('URL', GLOBAL_OBJECT)) return function create(url_string)  // use the `URL` object if it exists
 						{
-						
-								a2 = URL.parseAuthority(s) ;
+
+							// variables
+							
+							var url,
+								u,
+								s,
+								a ;
+							
+							//
+
+								url = new this(null) ;
+								u = new GLOBAL_OBJECT.URL(url_string) ;
+						 
+								/*Set the protocol scheme of the URL.*/
+								url.setScheme(u.protocol) ;
+						 
+								/*Set the file path part of the URL.*/
+								url.setPath(u.pathname) ;
+						 
+								/*Set the query part of the URL.*/
+						 
+								if((s = u.search) !== '')
+								{
+
+										url.setQuery(u.search.substring(1)) ;
+						 
+										objectEach(URI.parseQuery(url.getQuery( )), function(value, key) { url.setQueryParameter(key, value) ; }) ;
+						 
+								}
+						 
+								/*Set the fragment part of the URL.*/
+								url.setFragment(u.hash === '' ? null : u.hash.substring(1)) ;
+						 
+								/*Set the authority part of the URL.*/
+								url.setUser(u.username === '' ? null : u.username) ;
+								url.setPassword(u.password === '' ? null : u.password) ;
+								url.setHost(u.host) ;
+								url.setPort(u.port === '' ? -1 : parseInt(u.port)) ;
+						 
+								/*Set defaults depending on protocol scheme name and validate the URL.*/
+								switch(u.protocol)
+								{
 								
-								url.setUser(a2[0]) ;
-								url.setPassword(a2[1]) ;
-								url.setHost(a2[2]) ;
-								
-								s = a2[3] ;
-								url.setPort(s == null ? -1 : parseInt(s)) ;
-						
-						}
-						
-						/*Switch depending on scheme name.*/
-						
-						switch(a[0])
-						{
-						
-								case URI.SCHEME_FTP:
-								
-										/*Default to port 21 ([IETF-1994] page 5f)*/
+										case URI.SCHEME_FTP:
 										
-										if(url.getPort( ) === -1) ur.setPort(21) ;
-										
-										/*Default password to 'anonymous'.*/
-										
-										if(url.getPassword( )) url.setPassword('anonymous') ;
-										
-								break ;
-										
-								case URI.SCHEME_HTTP || URI.SCHEME_HTTPS:
-								
-										assert(! (url.getPassword( ) && url.getUser( )), 'Illegal URL: scheme http or https does not allow password and/or user parts.') ;
-								
-								break ;
-/*
-								case URI.SCHEME_GOPHER
-								case 'null':
+												/*Default to port 21 ([IETF-1994] page 5f)*/
+												if(url.getPort( ) === -1) url.setPort(21) ;
+												
+												/*Default password to 'anonymous'.*/
+												if(url.getPassword( )) url.setPassword('anonymous') ;
+												
 										break ;
-*/						
+												
+										case URI.SCHEME_HTTP || URI.SCHEME_HTTPS:
+										
+												assert(! (url.getPassword( ) && url.getUser( )), 'Illegal URL: scheme http or https does not allow password and/or user parts.') ;
+										
+										break ;
+						 
+										//...
+								}
+
+							// return
+							
+								return url ;
+
 						}
-				
-				},
+						else return function create(url_string) {
+						
+							// variables
+							
+							var url,
+								s,
+								a1, a2 ;
+								
+							//
+							
+								/*Prefix the a placeholder null scheme for URL strings without scheme part (which are invalid as URIs) to be able to use the `URI::create` constructor operation (implicitely, the `URI::parseURI` operation) without syntax error. Basically we're cheating URI to accept the URL string as an URI string. Don't tell anyone. ;-)*/
+								if(url_string.charAt(0) === '/') s = 'null:' + (url_string.charAt(1) === '/' ? url_string : '//' + url_string) ;
+								else s = url_string ;
+console.log('URL::create') ;
+								/*Call the URI constructor on this constructor.*/
+								url = URI.create.call(this, url_string) ;
+console.log('new-url:') ;
+console.dir(url) ;
+/*
+								a1 = URI.parseURI(s) ;
+console.log('parsed-url (%s): %s', url_string, a1) ;
+								/*Create a URL instance.*
+								url = new this(null) ;
+								
+								/*Parse general URL parts.*
+								if((s = a1[0]) !== 'null') url.setScheme(s) ;
+								else url.setScheme(null) ;
+								
+								url.setPath(a1[3]) ;
+								url.setFragment(a1[5]) ;
+								
+								/*Parse Authority.*
+								if((s = a1[2]))
+								{
+								
+										a2 = URL.parseAuthority(s) ;
+										
+										url.setUser(a2[0]) ;
+										url.setPassword(a2[1]) ;
+										url.setHost(a2[2]) ;
+										
+										s = a2[3] ;
+										url.setPort(s == null ? -1 : parseInt(s)) ;
+								
+								}
+								
+								/*Set defaults depending on scheme name.*/
+								switch(a[0])
+								{
+								
+										case URI.SCHEME_FTP:
+										
+												/*Default to port 21 ([IETF-1994] page 5f)*/
+												if(url.getPort( ) === -1) url.setPort(21) ;
+												
+												/*Default password to 'anonymous'.*/
+												if(url.getPassword( )) url.setPassword('anonymous') ;
+												
+										break ;
+												
+										case URI.SCHEME_HTTP || URI.SCHEME_HTTPS:
+										
+												assert(! (url.getPassword( ) && url.getUser( )), 'Illegal URL: scheme http or https does not allow password and/or user parts.') ;
+										
+										break ;
+/*@todo: continue
+										case URI.SCHEME_GOPHER
+										case 'null':
+												break ;
+*/
+								}
+
+						}
+						
+				})( ),
 				parseAuthority: function parseAuthority(authority)
 				{
 				

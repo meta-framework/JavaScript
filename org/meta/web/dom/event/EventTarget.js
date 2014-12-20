@@ -1,138 +1,84 @@
 /*
 @identifier org.meta.web.dom.event.EventTarget
 @extend org.meta.logic.event.EventTarget
-@require org.meta.web.dom.DOM, org.meta.web.dom.html.HTML
-@todo should be moved to `org.meta.web.dom.event` since not only HTML documents have an event model (e.g. SVG documents too).
+@require org.meta.web.dom.event.Events, org.meta.web.dom.event.EventListener
 */
 {
-		main: function main(target) { this.listeners = [ ] ; this.target = target ; },
+		main: function main(target)
+		{
+		
+				this.target = target ;
+				this.listeners = { } ;
+
+		},
 		global:
 		{
-				EVENT_READY: 'ready',
-				EVENT_LOAD: 'load',
-				EVENT_UNLOAD: 'unload',
-				create: function create(target, listeners)
+				create: function create(target)
 				{
 					
 					// preconditions
 					
-						assert(DOM.isElement(target) || isWindow(target), 'Invalid type for formal parameter `target`.') ;
+						assert(DOM.isElement(target) || DOM.isDocument(target) || isWindow(target), 'Invalid type for formal parameter `target`.') ;
 
 					// return
 				
-					return new this(target) ;
+						return new this(target) ;
 
 				}
 		},
 		local:
 		{
-				addListener: function addListener(name, listener)
+				destroy: function destroy( )
+				{
+
+						/*Unregister this event target's event listeners from the underlying DOM event target.*/
+						objectEach(this.listeners, function(list, event){
+								list.forEach(function(listener) { Events.removeListener(this.target, event, listener) ; }) ;
+						}) ;
+					
+						org.meta.web.dom.event.EventTarget.super.invoke('destroy', this) ; // implicitely destroys `.listeners`
+
+				},
+				addListener: function addListener(event, listener)
 				{
 					
 					//
 
-						org.meta.logic.event.EventTarget.invoke('addListener', this, [name, listener]) ;
+						/*Add the listener to the listener collection.*/
+						EventTarget.super.invoke('addListener', this, [event, listener]) ;
 
-						/*Add the event listener to the target.*/
-
-						HTML.addListener(name, listener, this.target) ;
+						/*Add the event listener to the DOM object.*/
+						Events.addListener(this.target, event, listener) ;
 				
 				},
-				removeListener: function removeListener(name, listener)
+				removeListener: function removeListener(event, listener)
 				{
 				
 					//
+
+						/*Remove the listener from the listener collection.*/
+						EventTarget.super.invoke('removeListener', this, [event, listener]) ;
 					
-						org.meta.logic.event.EventTarget.invoke('removeListener', this, [name, listener]) ;
-						
-						HTML.removeListener(name, listener, this.target) ;
+						/*Remove the listener from the DOM object.*/
+						Events.removeListener(this.target, event, listener) ;
 					
 				},
 				/**
-				* Remove all listeners for a given name.
+				* @param (String) event The event name.
+				* @param (Object) data An object containing event data.
 				*/
-				removeAllListeners: function removeAllListeners(name)
+				triggerEvent: function triggerEvent(event, data, attributes)
 				{
 
-					// variables
-					
-					var a,
-						i,
-						l ;
-						
-					//
-
-						if((a = this.listeners[name]))
-						{
-						
-								i = a.length ;
-								
-								while(--i >= 0)
+						Events.triggerEvent(
+								this.target,
+								event,
 								{
-								
-										l = a[i] ;
-
-										HTML.removeListener(name, l, this.target) ;
-										
+										bubbles: ((attributes & Events.EVENT_BUBBLES) === 1),
+										cancelable: ((attributes & Event.EVENT_CANCELABLE) === 1),
+										detail: data
 								}
-								
-						}
-						
-						delete this.listeners[name] ;
-
-				},
-				/**
-				* @link https://developer.mozilla.org/en-US/docs/Web/API/document.readyState
-				*/
-				onReady: (function( ) {
-				
-					// variables
-					
-					var d ;
-					
-					//
-					
-						d = constant('DEFAULT_DOCUMENT') ;
-					
-						if(isSet('readyState', d)) return function onReady(listener)
-						{
-						
-							// variables
-							
-							var target = this,
-								d,
-								f ;
-								
-							//
-							
-								d = constant('DEFAULT_DOCUMENT') ;
-								f = function( ) { target.triggerEvent(EventTarget.EVENT_READY) ; } ;
-														
-								if(d.readyState === 'complete') f( ) ;
-								else d.onreadystatechange = function( ) { if(d.readyState === 'complete') f( ) ; } ;
-								
-						}
-						else return function onReady(listener)
-						{
-						
-							// variables
-							
-							var target = this,
-								d,
-								l ;
-								
-							//
-							
-								d = constant('DEFAULT_DOCUMENT') ;
-								l = EventListener.create(function( ) { target.triggerEvent(EventTarget.EVENT_READY) ; }) ;
-								
-								if(this.target === d) this.addListener('DOMContentLoaded', l, EventListener.ATTRIBUTE_EXECUTE_ONCE) ;
-								else
-								
-										EventTarget.create(d)
-										.addListener('DOMContentLoaded', l, EventListener.ATTRIBUTE_EXECUTE_ONCE) ;
-						
-						}
-				})( )
+						) ;
+				}
 		}
 }

@@ -1,7 +1,7 @@
 /*
-@identifier org.meta.standard.Schedule
-@implement org.meta.standard.Runnable
-@extend org.meta.standard.Runnable
+@identifier org.meta.logic.Schedule
+@implement org.meta.logic.Runnable
+@extend org.meta.logic.Runnable
 @description Standard implementation of a timed sequentially processed callback chain.
 @deprecated
 */

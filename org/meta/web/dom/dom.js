@@ -1,6 +1,6 @@
 /*
 @identifier org.meta.web.dom.DOM
-@extend org.meta.standard.Object
+@extend org.meta.Object
 @require org.meta.web.dom.NodeIterator
 */
 {
@@ -39,7 +39,7 @@
 				* @param (Node) b
 				*/
 				isSame: (function( ) {
-						if(isSet('isSameNode', constant('DEFAULT_DOCUMENT').documentElement))
+						if(isSet('isSameNode', DEFAULT_DOCUMENT.documentElement))
 								return function isSame(a, b) { return a.isSameNode(b) ;	} ;
 						else return function isSame(a, b) { return a === b ; }
 				})( ),
@@ -49,7 +49,7 @@
 				* @todo polyfill
 				*/
 				isDescendant: (function( ) {
-						if(isSet('compareDocumentPosition', constant('DEFAULT_DOCUMENT')))
+						if(isSet('compareDocumentPosition', DEFAULT_DOCUMENT))
 								return function isDescendant(node, ancestor) { return !! (node.compareDocumentPosition(ancestor) & 16) ; }
 						else return function isDescendant(node, ancestor) { error('`Node.prototype.compareDocumentPosition` is not supported.') ; }
 				})( ),
@@ -139,7 +139,7 @@
 				
 			// creation, modification, retrieval functions
 /*@todo: XML create.*/
-				newElement: function newElement(name, document, namespace)
+				createElement: function createElement(document, name, namespace)
 				{
 				
 					//
@@ -161,11 +161,14 @@
 						throw Error('Not implemented') ;
 				},
 /*@todo: XML find.*/
-				find: function(selector, context)
+				find: function find(context, selector)
 				{
 						throw Error('Not implemented') ;
 				},
-
+				findFirst: function findFirst(context, selector)
+				{
+						throw Error('Not implemented') ;
+				},
 				append: function append(child, parent)
 				{
 				
@@ -203,6 +206,7 @@
 				*
 				* @param text (String) The String value to set the Node's text content to.
 				* @param node (Node) The Node whose text content to change.
+				*@todo polyfill
 				*/
 				setText: function setText(text, node)
 				{
@@ -216,8 +220,8 @@
 				},
 				/**
 				*Get the given node's text content.
-				* @todo: remove polyfill.
 				* @return String
+				* @todo polyfill
 				*/
 				getText: function getText(node)
 				{
@@ -250,7 +254,7 @@
 					//
 
 						node.appendChild(
-								node.getOwner( )
+								this.ownerOf(node)
 								.createTextNode(text)
 						) ;
 
@@ -260,17 +264,17 @@
 				*
 				* The attribute may be qualified with a namespace prefix which is automatically detected and resolved from the name string.
 				*
-				* @todo: polyfill.
 				* @param name (String) The name of the attribute to set. May include a namespace prefix in the form `<namespace-prefix>:<attribute-name>`
 				* @param value (String) The value to set the attribute for the given name to.
 				* @param node (Node) The target node whose attribute to set to the given value.
+				* @todo: polyfill.
 				*/
-				setAttribute: function setAttribute(name, value, element, namespace)
+				setAttribute: function setAttribute(element, name, value, namespace)
 				{
 
 					// preconditions
 
-						assert(this.isElement(element), 'Invalid node type for argument `element`.') ;
+						assert(this.isElement(element), 'Invalid Argument: Object for formal parameter "element" must be DOM element.') ;
 
 					//
 
@@ -283,17 +287,17 @@
 				/**
 				* Get the attribute of the given element node for the given name.
 				*
-				* @todo: polyfill.
 				* @param name The qualified (i.e. attribute name with namespace prefix joined by a colon) or unqualified name for the attribute the value of which is to be retrieved.
 				*
 				* @return (String)
+				* @todo: polyfill.
 				*/
-				getAttribute: function getAttribute(name, element, namespace)
+				getAttribute: function getAttribute(element, name, namespace)
 				{
 				
 					// preconditions
 					
-						assert(this.isElement(element), 'Invalid type for argument `element`.') ;
+						assert(this.isElement(element), 'Invalid Argument: Object for formal parameter "element" must be DOM element.') ;
 
 					//
 
@@ -305,12 +309,27 @@
 					return null ;
 
 				},
-				hasAttribute: function hasAttribute(name, element, namespace)
+				/**@todo polyfill*/
+				removeAttribute: function removeAttribute(element, name, namespace)
 				{
 				
 					// preconditions
 					
-						assert(this.isElement(element), 'Invalid type for argument `element`.') ;
+						assert(this.isElement(element), 'Invalid Argument: Object for formal parameter "element" must be DOM element..') ;
+					
+					//
+					
+						if(isSet(element, 'removeAttributeNS') && namespace) return element.removeAttributeNS(namespace, name) ;
+						else return element.removeAttribute(name) ;
+
+				},
+				/**@todo polyfill*/
+				hasAttribute: function hasAttribute(element, name, namespace)
+				{
+				
+					// preconditions
+					
+						assert(this.isElement(element), 'Invalid Argument: Object for formal parameter "element" must be DOM element..') ;
 
 					//
 
@@ -319,8 +338,62 @@
 
 					// return 
 
-					return false ;
+						return false ;
 
-				}
+				},
+				/**
+				* @link https://developer.mozilla.org/en-US/docs/Web/API/EventTarget.addEventListener
+				* @link https://developer.mozilla.org/en-US/docs/DOM/event
+				* @link http://msdn.microsoft.com/en-us/library/ie/ms535863%28v=vs.85%29.aspx
+				* @link name (String) The String identifier of the Event type (e.g. 'load').
+				* @link listener (Function, org.meta.web.dom.event.EventListener) A listener object.
+				* @link target (Element, Window) The target of the the event listener registration.
+				* @todo: capture, legacy (?)
+				* @deprecated: refactored into `Events`
+				*/
+				_addListener: (function( ) {
+						if(isSet('addEventListener', DEFAULT_DOCUMENT)) return function addListener(name, listener, target)
+						{
+					
+							//
+							
+
+								target.addEventListener(name, listener, false) ;
+								
+						}
+						else if(isSet('attachEvent', DEFAULT_DOCUMENT)) return function addListener(name, listener, target)
+						{
+						
+							//
+							
+								target.attachEvent('on' + name, listener) ;
+
+						}
+						else error('Unknown DOM event model implementation.') ;
+				})( ),
+				/**
+				* @todo: capture, legacy (?)
+				* @deprecated: refactored into `Events`
+				*/
+				_removeListener: (function( ) {
+						if(isSet('removeEventListener', DEFAULT_DOCUMENT)) return function removeListener(name, listener, target)
+						{
+					
+							//
+							
+
+								target.removeEventListener(name, listener, false) ;
+								
+						}
+						else if(isSet('detachEvent', DEFAULT_DOCUMENT)) return function removeListener(name, listener, target)
+						{
+						
+							//
+							
+								target.detachEvent('on' + name, listener) ;
+
+						}
+						else error('Unknown DOM event model implementation.') ;
+				})( )
 		}
 }

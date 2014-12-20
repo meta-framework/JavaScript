@@ -1,12 +1,11 @@
 /*
 @identifier org.meta.web.Cookie
-@extend org.meta.standard.Object
+@extend org.meta.Object
 @require org.meta.util.Matcher
 @description Utility object for managing document cookies.
 @link https://developer.mozilla.org/en-US/docs/DOM/document.cookie
 */
 {
-		extend: 'org.meta.standard.Object',
 		main: function main(entries)
 		{
 				this.entries = entries ;
@@ -32,7 +31,7 @@
 
 						/*Parse the cookie string and create and construct an entries object from the resulting key-value pairs.*/
 
-						if((s = constant('DEFAULT_DOCUMENT').cookie).length > 0)
+						if((s = DEFAULT_DOCUMENT.cookie).length > 0)
 						{
 
 								m.reset(s) ;
@@ -83,7 +82,7 @@
 						try { s = JSON.stringify(properties.value) ; }
 						catch(error) { s = properties.value ; }
 						
-						cookie = key + constant('CHARACTERS').EQUALS + encodeURIComponent(s) + ';path=' + encodeURIComponent(properties.path || constant('CHARACTERS').SLASH) ;
+						cookie = key + '=' + encodeURIComponent(s) + ';path=' + encodeURIComponent(properties.path || '/') ;
 						
 						if(properties.secure) { cookie += ';secure' ; }
 						if(properties.max_age) { cookie += ';max-age=' + properties.max_age ; }
@@ -97,7 +96,7 @@
 								
 						}
 
-						constant('DEFAULT_DOCUMENT').cookie = cookie ;
+						DEFAULT_DOCUMENT.cookie = cookie ;
 
 				},
 				removeEntry: function removeEntry(key)
@@ -109,7 +108,7 @@
 						
 					//
 
-						constant('DEFAULT_DOCUMENT').cookie = key + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/' ;
+						DEFAULT_DOCUMENT.cookie = key + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/' ;
 					
 						delete this.entries[key] ;
 

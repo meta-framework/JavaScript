@@ -1,6 +1,6 @@
 /*
 @identifier org.meta.util.Matcher
-@extend org.meta.standard.Object
+@extend org.meta.Object
 @description An Object wrapper for the RegExp core object.
 */
 {
@@ -85,7 +85,7 @@
 
 				},
 				/**
-				* Find a match which starts at the current index.
+				* Find a match starting at the current index.
 				*
 				* @link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
 				*/
@@ -145,6 +145,7 @@
 					return i1 ;
 				
 				},
+				/**Return the stop index of the group for the given index.*/
 				end: function end(index)
 				{
 				

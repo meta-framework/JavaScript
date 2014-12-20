@@ -1,7 +1,7 @@
 /*
-@identifier org.meta.standard.Iterable
+@identifier org.meta.logic.Iterable
 @type abstract
-@extend org.meta.standard.Object
+@extend org.meta.Object
 @description Abstract object containing standard implementations of an iterable element.
 */
 {

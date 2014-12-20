@@ -1,6 +1,6 @@
 /*
 @identifier org.meta.web.dom.NodeList
-@extend org.meta.standard.Iterable
+@extend org.meta.logic.Iterable
 @require org.meta.web.dom.NodeIterator
 */
 {
@@ -12,7 +12,7 @@
 
 					// preconditions
 
-						assert(isInstanceOf(constant('GLOBAL_OBJECT').NodeList, nodes) || isInstanceOf(constant('GLOBAL_OBJECT').HTMLCollection, nodes), 'Illegal Argument: object for formal parameter `nodes` has invalid type.') ;
+						assert(isInstanceOf(GLOBAL_OBJECT.NodeList, nodes) || isInstanceOf(GLOBAL_OBJECT.HTMLCollection, nodes), 'Illegal Argument: object for formal parameter `nodes` has invalid type.') ;
 						
 					// return
 					

@@ -3,8 +3,13 @@
 @extend org.meta.logic.event.EventTarget
 @type abstract
 @description Abstract type specifying basic operations and attributes of an application.
+@deprecated
 */
 {
+		main: function main(argv)
+		{
+				this.modules = { } ;
+		},
 		global: {
 				/**
 				* Create the application.
@@ -23,6 +28,10 @@
 				* @type org.meta.logic.application.Module
 				*/
 				active: null,
+				/**
+				* A map of URL strings to type identifiers.
+				*/
+				modules: null,
 				/**
 				* Transition to the module for the given url.
 				*

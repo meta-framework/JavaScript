@@ -1,24 +1,23 @@
 /*
 @identifier org.meta.logic.event.EventListener
-@extend org.meta.standard.Callable
-@require org.meta.standard.Callable, org.meta.standard.Timeout
+@extend org.meta.logic.Callable
 @description Basic implementation of a listener object in the event model.
 */
 {
-		main: function main(callback, parameter, attributes)
+		main: function main(callback/*, parameter*/, attributes)
 		{
 				this.callback = callback ;
-				this.parameter = parameter ;
+//				this.parameter = parameter ;
 				this.attributes = attributes ;
 		},
 		global:
 		{
-				create: function create(callback, parameter, attributes)
+				create: function create(callback/*, parameter*/, attributes)
 				{
 		
 					// preconditions
 					
-						assert(isFunction(callback), 'Invalid type for parameter `callback`.') ;
+						assert(isFunction(callback), 'Illegal Argument: Invalid type for formal parameter `callback`.') ;
 					
 					// variables
 					
@@ -26,8 +25,8 @@
 					
 					//
 					
-						listener = new this(callback, parameter || null, attributes || Callable.ATTRIBUTE_EXCECUTE_ONCE) ;
-						listener.activate( ) ;
+						listener = new this(callback, attributes || EventListener.EXCECUTE_ONCE) ;
+//						listener.activate( ) ;
 						
 					// return
 					
@@ -38,9 +37,7 @@
 		local: {
 				/**
 				* Handle the event this listener is registered for.
-				*
-				* The callback handling the event for this listener is called with context fixed to this listener instance and receives an event object characterizing the event.
 				*/
-				handleEvent: function handleEvent(event) { console.log(this.toString( ));this.call(event) ; }
+				handleEvent: function handleEvent(event) { this.call(event) ; }
 		}
 }

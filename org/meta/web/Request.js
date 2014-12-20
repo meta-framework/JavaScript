@@ -3,6 +3,7 @@
 @extend org.meta.logic.event.EventTarget
 @description An object wrapper for the XMLHttpRequest object (or similar implementation of XHR).
 @todo [1] full list of HTTP headers
+@deprecated: refactored into core functions `request*`
 */
 {
 		main: function main(request)
@@ -58,8 +59,8 @@
 					
 					//
 					
-						if((r = constant('GLOBAL_OBJECT').XMLHttpRequest)) return function createRequestObject( ) { return new r( ) ; } ;
-						else if(constant('IS_IE'))
+						if((r = GLOBAL_OBJECT.XMLHttpRequest)) return function createRequestObject( ) { return new r( ) ; } ;
+						else if(IS_IE)
 						{
 						
 								arraySome(Request.MS_ACTIVEX_XHR, function(name) {

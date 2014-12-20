@@ -1,115 +1,66 @@
 /*
+@abstract
 @identifier org.meta.web.dom.html.Component
 @extend org.meta.web.dom.Component
-@require org.meta.web.dom.html.HTML, org.meta.web.dom.event.EventTarget
+@require org.meta.web.css.CSSStyle, org.meta.web.dom.html.HTML
 */
 {
-		extend: 'org.meta.web.dom.Component',
-		main: function main(root, target)
+		main: function main(root)
 		{
 				this.root = root ;
-				this.target = target ;
+				this.style = new CSSStyle(null) ;
 				this.children = [ ] ;
 		},
 		global:
 		{
-				create: function create(root)
+				create: function create( )
 				{
-				
-					// preconditions
-
-						assert(DOM.isElement(root) && HTML.namespaceOf(root) === HTML.NAMESPACE_URI, 'Illegal Argument: Invalid type for formal parameter `root`.') ;
-				
-					// return
-					
-					return new this(root, EventTarget.create(root)) ;
-					
+						error('Unsupported Operation: Abstract type.') ;					
 				}
 		},
 		local:
 		{
-				/**
-				* @type EventTarget
-				*/
-				target: null,
 				destroy: function destroy( )
 				{
 				
-						/*Destroy the event target instance releasing all listeners.*/
-
-						this.target.destroy( ) ;
-						
-						if(this.super.destroy) this.super.destroy.call(this) ;
-				
-				},
-				setClass: function addClass(name) { HTML.setClass(name, this.root) ; },
-				getClass: function getClass( ) { return	HTML.getClass(this.root) ; },
-				addClass: function addClass(name) { HTML.addClass(name, this.root) ; },
-				removeClass: function removeClass(name) { HTML.removeClass(name, this.root) ; },
-				toggleClass: function toggleClass(name) { HTML.toggleClass(name, this.root) ; },
-				/**
-				* Register a 'load' handler for this component.
-				*
-				* @param (String) name The event name to register the given action.
-				* @param (EventListener) listener An event listener.
-				*/
-				onEvent: function onEvent(name, listener)
-				{
-console.log('Component.onEvent("%s", %s)', name, listener) ;
-					//
+						/*Destroy the style object.*/
+						this.style.destroy( ) ;
 					
-						this.target.addListener(name, listener) ;
+						/*Destroy all child components.*/
+						this.children.forEach(function(component) { component.destroy( ); }) ;
+				
+						Component.super.destroy.call(this) ;
 				
 				},
 				/**
-				* Listen to the document ready event.
+				* Set the component's initial style.
 				*/
-				onReady: (function( ) {				
-						if(isSet('readyState', constant('DEFAULT_DOCUMENT'))) return function onReady(listener)
-						{
-						
-							// variables
-							
-							var component = this,
-								d ;
-							
-							//
-							
-								this.target.super.addListener.apply(this.target, ['ready', listener]) ;
-							
-								if((d = constant('DEFAULT_DOCUMENT')) !== 'complete') d.onreadystatechange = function( ) { if(d.readyState === 'complete') component.target.triggerEvent('ready', null) ; } ;
+				draw: function draw(style)
+				{
+				
+						style.addStyleRule(
+								'#' + this.getID( ),
+								this.style.toRuleString( )
+						) ;
 
-						
-						}
-						else return function onReady(listener)
-						{
-						
-							// variables
-							
-							var component = this,
-								t ;
-							
-							//
-						
-								this.target.super.addListener.apply(this.target, ['ready', listener]) ;
-								
-								t = EventTarget.create(this.document) ;
-								t.addListener(
-										'DOMContentLoaded',
-										EventListener.create(
-												function( ) {
-
-														component.triggerEvent('ready', null) ;
-														
-														t.destroy( ) ;
-														
-												},
-												null,
-												EventListener.ATTRIBUTE_EXECUTE_ONCE
-										)
-								) ;
-								
-						}
-				})( )
+				},
+				/**
+				* Update this component's current style.
+				*/
+				redraw: function draw(style)
+				{
+					//..
+				},
+				setAttribute: function setAttribute(name, value) { HTML.setAttribute(this.root, name, value) ; },
+				getAttribute: function getAttribute(name, value) { return HTML.getAttribute(this.root, name) ; },
+				removeAttribute: function removeAttribute(name) { return HTML.removeAttribute(this.root, name) ; },
+				hasAttribute: function hasAttribute(name) { return HTML.hasAttribute(this.root, name) ; },
+				setID: function setID(id) { HTML.setAttribute(this.root, 'id', id) ; },
+				getID: function getID( ) { return HTML.getAttribute(this.root, 'id') ; },
+				setClass: function setClass(name) { HTML.setClass(this.root, name) ; },
+				getClass: function getClass( ) { return	HTML.getClass(this.root) ; },
+				addClass: function addClass(name) { HTML.addClass(this.root, name) ; },
+				removeClass: function removeClass(name) { HTML.removeClass(this.root, name) ; },
+				toggleClass: function toggleClass(name) { HTML.toggleClass(this.root, name) ; }
 		}
 }

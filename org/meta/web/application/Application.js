@@ -1,17 +1,19 @@
 /*
 @identifier org.meta.web.application.Application
-@type abstract
-@extend org.meta.logic.application.Application
-@require org.meta.web.Session, org.meta.web.Request
-@description An abstract type specifying the basic operations and attributes of a web application. A web application is modelled as a finite state machine whose states map to URLs and whose transitions are identified by URL changes. The states of the web application's machine model are supposed to be modular functions of the application, i.e. independent use cases.
+@extend org.meta.Object
+@require org.meta.web.URL, org.meta.web.Location, org.meta.web.Session, org.meta.web.css.CSSStyleSheet
+@description An abstract type specifying the basic operations and attributes of a web application. A web application is modelled as a finite state machine whose states map to location URLs and whose transitions are identified by location changes. Ideally, the  states of the web application's machine model are supposed to be modular functions of the application.
 */
 {
-		main: function main(session)
+		main: function main(session, style)
 		{
 
 			//
 
 				this.session = session ;
+				this.style = style ;
+
+				this.modules = { } ;
 
 		},
 		global:
@@ -19,38 +21,34 @@
 				/**
 				* The standard application creation operation.
 				*/
-				createApplication: function createApplication( )
+				create: function create( )
 				{
-				
+// console.log('org.meta.web.application.Application::create') ;
 					// variables
 					
 					var application,
-						s,
-						t ;
+						session,
+						style ;
 					
 					//
-					
-						application = new this((s = Session.create( ))) ;
-						
-						/*@todo the initial URL might not be '/'*/
-						s.onTransition(EventListener.create(function(event) { alert(stringFormat('transition-url: "%s"', event.url)) ; })) ;
-						s.onReady(EventListener.create(function( ) { s.transition('/') ; })) ;
-/*@deprecated:
-						r = Request.create(null, Request.ATTRIBUTE_ASYNCHRONOUS & Request.ATTRIBUTE_CACHE & Request.ATTRIBUTE_FLAG) ;
-						r.setMIMEType(Request.MIME_JAVASCRIPT) ;
-						r.setHeader(Request.HTTP_ACCEPTS, 'application/javascript;q=0.8, text/html,application/xhtml+xml,application/xml;q=0.8,* /*;q=0.7') ;
-						
-						application = this((s = Session.create( )), r) ;
-						
-						application.onReady(
-								EventListener.create(function( ) {
-										s.onEvent(Session.EVENT_REFER, EventListener.create(function(event) { application.transition(event.href) ; })) ;
-										s.refer(s.getLocation( )) ;
-								}),
-								EventListener.ATTRIBUTES_EXECUTE_ONCE
-						) ;
-						application.onEvent(EventTarget.EVENT_UNLOAD, EventListener.create(function( ) { application.destroy( ) ; })) ;
+
+						application = new this((session = Session.create( )), (style = CSSStyleSheet.create(CSSStyleSheet.RESET_STYLE))) ;
+
+						session.onBegin(function( ) {
+console.log('(!) session-begin') ;
+								/*Listen to location changes.*/
+								session.onTransition(function(event) { application.transition(event) ; }) ;
+								
+								/*Transition to the initial location./
+								application.transition(Location.toURL( )) ;
 */
+						}) ;
+						session.onClose(function( ) {
+console.log('(!) session-close') ;
+								/*Destroy the application on session close (this implies logic bound to destruction of a `Session` object)*/
+								application.destroy( ) ;
+						}) ;
+
 					// return
 					
 					return application ;
@@ -62,33 +60,56 @@
 				/**@type org.meta.web.Session*/
 				session: null,
 				/**
-				* The active controller.
-				* @type org.meta.web.AppController
+				* A map of locations to type identifiers.
+				* @type Object
 				*/
-				active: null,
+				modules: null,
 				destroy: function destroy( )
 				{
 
 						this.session.destroy( ) ;
-						this.target.destroy( ) ;
 						
-						if(this.super.destroy) this.super.destroy.call(this) ;
+						Application.super.invoke('destroy', this) ;
 
 				},
-				transition: function transition(url)
+				mapModule: function mapModule(path, identifier)
 				{
-				
-					// variables
 					
-					var r ;
+					// preconditions
+					
+						assert(! isSet(path, this.modules), 'Illegal State: Path is already mapped to module (path=%s)', path) ;
 					
 					//
 					
-						this.request.setURI(url) ;
-						this.request.onDone(new EventListener(function( ) {}), EventListener.ATTRIBUTES_EXECUTE_ONCE) ;
-						this.request.onError(new EventListener(function( ) {}), EventListener.ATTRIBUTES_EXECUTE_ONCE) ;
-						this.request.send( ) ;
-				
+						this.modules[path] = identifier ;
+					
+				},
+				unmapModule: function unmapModule(path) { delete this.modules[path] ; },
+				switchModule: function switchModule(constructor)
+				{
+console.log('Application#switchModule (from=%s, to=%s)', typeOf(this.module), constructor.reflect.identifier) ;
+// console.log('(!) module-imported') ;
+if((old = this.module)) old.destroy( ) ;
+this.module = constructor.create( )  ;
+this.module.draw(this.style) ;
+				},
+				transition: function transition(path)
+				{
+// console.log('(!) transition-event: %s', path) ;
+					// variables
+					
+					var url,
+						identifier,
+						application = this ;
+					
+					//
+					
+						url = URL.create(path) ;
+// console.log('\t> file-path: "%s"', url.getPath( )) ;
+						if((identifier = this.modules[url.getPath( )]))
+								if((constructor = constructorOf(identifier))) switchModule(constructor) ;
+								else require(identifier, function( ) { application.switchModule(constructorOf(identifier)) ; }) ;
+
 				}
 		}
 }

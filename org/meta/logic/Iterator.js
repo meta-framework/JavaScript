@@ -1,8 +1,8 @@
 /*
-@identifier org.meta.standard.Iterator
+@identifier org.meta.logic.Iterator
 @type abstract
-@extend org.meta.standard.Object
-@require org.meta.standard.Iterable
+@extend org.meta.Object
+@require org.meta.logic.Iterable
 @description Abstract object implementing the standard operations of an iterator pattern.
 */
 {

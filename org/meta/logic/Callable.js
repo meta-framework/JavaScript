@@ -1,19 +1,23 @@
 /*
-@identifier org.meta.standard.Callable
+@identifier org.meta.logic.Callable
 @type abstract
-@extend org.meta.standard.Settable
+@extend org.meta.logic.Setable
 @description Abstract type specifying the attributes and operations of a callable object.
 */
 {
 		global:
 		{
-				ATTRIBUTE_EXCECUTE_ONCE: 1,
+				EXCECUTE_ONCE: 1,/*
 				STATE_NONE: 0,
 				STATE_ACTIVE: 1,
-				STATE_INACTIVE: 1 << 1,
+				STATE_INACTIVE: 2,*/
 				create: function create(callback)
 				{
-						
+				
+					// return
+					
+						return new this(callback) ;
+/*
 					// variables
 					
 					var callable ;
@@ -26,13 +30,14 @@
 					// return
 					
 					return callable ;
-
+*/
 				}
 		},
 		local:
 		{
 				/**@type Function*/
 				callback: null,
+/*
 				isInactive: function isInactive( ) { return this.getState( ) === Callable.STATE_INACTIVE ; },
 				isActive: function isActive( ) { return this.getState( ) === Callable.STATE_ACTIVE ; },
 				activate: function activate( )
@@ -59,6 +64,7 @@
 						this.setState(Callable.STATE_INACTIVE) ;
 						
 				},
+*/
 				call: function call( )
 				{
 				
