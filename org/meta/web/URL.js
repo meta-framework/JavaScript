@@ -10,51 +10,70 @@
 {
 		global:
 		{
-				/**@todo additional URL validation; revision on the homogenization branch for this constructor.*/
+				/**@todo test polyfill; additional URL validation; revision on the homogenization branch for this constructor.*/
 				create: (function( ) {
 						if(isSet('URL', GLOBAL_OBJECT)) return function create(url_string)  // use the `URL` object if it exists
 						{
-
+// console.log('URL::create') ;
 							// variables
 							
 							var url,
 								u,
-								s,
+								s,/*
+								builder,*/
 								a ;
 							
 							//
 
-								url = new this(null) ;
+								url = new this(url_string) ;
 								u = new GLOBAL_OBJECT.URL(url_string) ;
 						 
 								/*Set the protocol scheme of the URL.*/
 								url.setScheme(u.protocol) ;
+						 
+								/*Set the (components of the) authority part of the URL.*/
+//								builder = new StringBuilder('') ;
+						 
+								if(! stringEmpty((s = u.username))) url.setUser(s) ;
+								else url.setUser(null) ;
+						 
+								if(! stringEmpty((s = u.password))) url.setPassword(s) ;
+								else url.setPassword(null) ;
+						 
+								url.setHost((s = u.host)) ;
+						 
+								if(! stringEmpty((s = u.port))) url.setPort(parseInt(s)) ;
+								else url.setPort(-1) ;
+						 
+/*
+								url.setUser(u.username === '' ? null : u.username) ;
+								url.setPassword(u.password === '' ? null : u.password) ;
+								url.setHost(u.host) ;
+								url.setPort(u.port === '' ? -1 : parseInt(u.port)) ;
+*/
+								url.setAuthority(u.hostname) ;
 						 
 								/*Set the file path part of the URL.*/
 								url.setPath(u.pathname) ;
 						 
 								/*Set the query part of the URL.*/
 						 
-								if((s = u.search) !== '')
+								if(! stringEmpty((s = u.search)))
 								{
 
 										url.setQuery(u.search.substring(1)) ;
 						 
-										objectEach(URI.parseQuery(url.getQuery( )), function(value, key) { url.setQueryParameter(key, value) ; }) ;
+										objectEach(URI.parseQuery(url.getQuery( )), function(v, k) { url.setQueryParameter(k, v) ; }) ;
 						 
 								}
 						 
 								/*Set the fragment part of the URL.*/
-								url.setFragment(u.hash === '' ? null : u.hash.substring(1)) ;
-						 
-								/*Set the authority part of the URL.*/
-								url.setUser(u.username === '' ? null : u.username) ;
-								url.setPassword(u.password === '' ? null : u.password) ;
-								url.setHost(u.host) ;
-								url.setPort(u.port === '' ? -1 : parseInt(u.port)) ;
+								//url.setFragment(u.hash === '' ? null : u.hash.substring(1)) ;
+								if(! stringEmpty((s = u.hash))) url.setFragment(s) ;
+								else url.setFragment(null) ;
 						 
 								/*Set defaults depending on protocol scheme name and validate the URL.*/
-								switch(u.protocol)
+								switch(url.getScheme( ))
 								{
 								
 										case URI.SCHEME_FTP:
@@ -94,11 +113,11 @@
 								/*Prefix the a placeholder null scheme for URL strings without scheme part (which are invalid as URIs) to be able to use the `URI::create` constructor operation (implicitely, the `URI::parseURI` operation) without syntax error. Basically we're cheating URI to accept the URL string as an URI string. Don't tell anyone. ;-)*/
 								if(url_string.charAt(0) === '/') s = 'null:' + (url_string.charAt(1) === '/' ? url_string : '//' + url_string) ;
 								else s = url_string ;
-console.log('URL::create') ;
+// console.log('URL::create') ;
 								/*Call the URI constructor on this constructor.*/
 								url = URI.create.call(this, url_string) ;
-console.log('new-url:') ;
-console.dir(url) ;
+// console.log('new-url:') ;
+// console.dir(url) ;
 /*
 								a1 = URI.parseURI(s) ;
 console.log('parsed-url (%s): %s', url_string, a1) ;

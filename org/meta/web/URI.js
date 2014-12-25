@@ -1,7 +1,7 @@
 /*
 @identifier org.meta.web.URI
 @extend org.meta.Object
-@require org.meta.util.Matcher, org.meta.util.Tokenizer
+@require org.meta.util.Matcher, org.meta.util.Tokenizer, org.meta.util.StringBuilder
 @description An object representation of a URL.
 @link [IETF-2005] http://www.ietf.org/rfc/rfc3986.txt
 @link [IETF-1994] http://tools.ietf.org/html/rfc1738
@@ -40,8 +40,9 @@
 		PATTERN_URI = stringFormat('(%s):(//[^/]*)?(/?[^?]*)(?:\\?([^#]))?(?:#(.*))?', PATTERN_SCHEME) ; // this is a quick---non-validating--- parser for URIs
 
 	return {
-			main: function main(argv)
+			main: function main(string_value)
 			{
+					this.string_value = string_value ;
 					this.parameter = { } ;
 			},
 			global:
@@ -160,6 +161,7 @@ console.log('URI::create') ;
 							
 									a2 = URI.parseAuthority(s) ;
 
+									uri.setAuthority(s) ;
 									uri.setUserinfo(a2[0]) ;
 									uri.setHost(a2[1]) ;
 									uri.setPort(a2[2] || -1) ;
@@ -252,6 +254,7 @@ console.log('URI::create') ;
 			local:
 			{
 					scheme: null,
+					authority: null,
 					userinfo: null,
 					host: null,
 					port: -1,
@@ -261,6 +264,8 @@ console.log('URI::create') ;
 					fragment: null,
 					setScheme: function setScheme(scheme) { this.scheme = scheme ; },
 					getScheme: function getScheme( ) { return this.scheme ; },
+					setAuthority: function setAuthority(authority) { this.authority = authority ; },
+					getAuthority: function getAuthority( ) { return this.authority ; },
 					setUserinfo: function setUserinfo(userinfo) { this.userinfo = userinfo ; },
 					getUserinfo: function getUserinfo( ) { return this.userinfo ; },
 					setHost: function setHost(host) { this.host = host ; },
@@ -275,9 +280,64 @@ console.log('URI::create') ;
 					getQueryParameter: function getQueryParameter(name) { return this.parameter[name] ; },
 					setFragment: function setFragment(fragment) { this.fragment = fragment ; },
 					getFragment: function getFragment( ) { return this.fragment ; },
+					/**
+					* Get the URI substring which identifies the requested file.
+					* @contract This operation is ought to concatenate the file path, query and fragment components of the URI.
+					*/
+					getFileIdentifier: function getFileIdentifier( )
+					{
+
+						// variables
+
+						var builder,
+							s ;
+
+						//
+							if((s = this.getPath( )))
+							{
+							
+									builder = new StringBuilder(s) ;
+
+									if((s = this.getQuery( ))) builder.append('?')
+									.append(s) ;
+									if((s = this.getFragment( ))) builder.append('#')
+									.append(s) ;
+								
+									return builder.build( ) ;
+								
+							}
+						
+						// return
+
+							return null ;
+
+					},
+					_getFileIdentifier: function getFileIdentifier( )
+					{
+ 
+						// variables
+ 
+						var builder,
+							s ;
+ 
+						//
+							builder = new StringBuilder(this.getPath( )) ;
+ 
+							if((s = this.getQuery( )))
+									builder.append('?')
+									.append(s) ;
+							if((s = this.getFragment( )))
+									builder.append('#')
+									.append(s) ;
+ 
+						// return
+
+							return builder.build( ) ;
+
+					},
 					toURIString: function toURIString( )
 					{
-							throw '...' ;
+							return this.string_value ;
 					}
 			}
 	} ;

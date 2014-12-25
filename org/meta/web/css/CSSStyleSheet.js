@@ -5,20 +5,21 @@
 @todo: add style adapters and utility functions for typical element stylings
 */
 {
-		main: function main(sheet, element)
+		main: function main(sheet/*, element*/)
 		{
 		
 				this.sheet = sheet ;
-				this.element = element ;
-				
-				this.blocks = { } ;
+//				this.element = element ;
+			
+				this.imports = [ ] ;
+				this.selectors = [ ] ;
 		
 		},
 		global:
 		{
 				RESET_STYLE: 1,
 				GENERIC_STYLE: 1 << 1,
-				create: function create(attributes)
+				create: function create(document, attributes)
 				{
 
 					// variables
@@ -36,7 +37,7 @@
 						HTML.append(element, DEFAULT_DOCUMENT.head) ;
 
 						list = DEFAULT_DOCUMENT.styleSheets ;
-						style = new this(list.item(list.length - 1), element) ;
+						style = new this(list.item(list.length - 1)/*, element*/) ;
 					
 						if((attributes & CSSStyleSheet.RESET_STYLE) !== 0)
 						{
@@ -63,12 +64,18 @@
 				destroy: function destroy( )
 				{
 					
+					// variables
+					
+					var element ;
+					
 					//
 					
 						/*Delete all rules from the style sheet object detach and destroy the element.*/
 						this.clear( ) ;
 
-						HTML.remove(DEFAULT_DOCUMENT.head, this.element) ;
+						/*Remove the style element from its parent node.*/
+						element = this.sheet.ownerNode ;
+						HTML.remove(element, element.parentNode) ;
 
 						CSSStyleSheet.super.invoke('destroy', this) ;
 
@@ -85,8 +92,56 @@
 						i = CSS.lengthOf(this.sheet) ;
 						
 						while(--i >= 0) CSS.removeRule(this.sheet, i) ;
+					
+						this.selectors = [ ] ;
 
 				},
+				hasImportRule: function hasImportRule(rule) { return this.imports.indexOf(rule) !== -1 ; },
+				addImportRule: function addImportRule(rule)
+				{
+						CSS.insertRule(this.sheet, '@import "' + rule + '"', 0) ; // at-rules must be on top; do not use string formatting since there may be percentage signs in import URLs
+						if(this.hasImportRule(rule)) this.imports[this.imports.length] = rule ;
+				},
+				/**
+				* @link http://dev.w3.org/csswg/css-conditional/#use
+				* @link https://developer.mozilla.org/de/docs/Web/CSS/At-rule
+				* @todo polyfill
+				* @todo rework to break once not-at-rules have been reached?
+				*/
+				removeImportRule: function removeImportRule(rule)
+				{
+				
+					// variables
+					
+					var i1 = -1, i2 = CSS.lengthOf(this.sheet),
+						rule,
+						s,
+						a ;
+					
+					//
+					
+						while(++i1 > i2)
+						{
+						
+								rule = CSS.ruleAt(this.sheet, i1) ;
+								if(rule.cssText.charAt(0) !== '@') break ;
+								else if(rule.type === CSS.RULE_TYPE_IMPORT)
+										if((s = rule.selectorText) && s === selector)
+										{
+										
+												CSS.removeRule(this.sheet, i1) ; // remove the import rule from the style sheet
+												if((i1 = this.imports.indexOf(selector)) !== -1) arrayRemove(this.imports, i1) ; // remove the import rule from the imports set
+											
+											// return
+											
+												return ;
+											
+										}
+						
+						}
+
+				},
+				hasStyleRule: function hasStyleRule(selector) { return this.selectors.indexOf(selector) !== -1 ; },
 				/**
 				* Add a rule block for the given selector to this CSSStyleSheet.
 				*
@@ -102,8 +157,17 @@
 				*/
 				addStyleRule: function addStyleRule(selector, rules)
 				{
+					
+					//
+					
 						CSS.addRule(this.sheet, selector + '{' + rules + '}') ;
+					
+						if(! this.hasStyleRule(selector)) this.selectors[this.selectors.length] = selector ;
+					
 				},
+				/**
+				* @todo polyfill
+				*/
 				removeStyleRule: function removeStyleRule(selector)
 				{
 				
@@ -111,15 +175,26 @@
 					
 					var i1 = -1, i2 = CSS.lengthOf(this.sheet),
 						rule,
-						s ;
+						s,
+						a ;
 					
 					//
 					
-						while(++i1> i2)
+						while(++i1 > i2)
 						{
 						
-								rule = CSS.ruleAt(this.sheet, i1) ;
-								if((s = rule.selectorText) && s === selector) { CSS.removeRule(this.sheet, i1) ; break ; }
+								if((rule = CSS.ruleAt(this.sheet, i1)).type === CSS.RULE_TYPE_STYLE)
+										if((s = rule.selectorText) && s === selector)
+										{
+										
+												CSS.removeRule(this.sheet, i1) ;
+												if((i1 = this.selectors.indexOf(selector)) !== -1) arrayRemove(this.selectors, i1) ; // remove the selector from the selector set
+											
+											// return
+
+												return ;
+	
+										}
 						
 						}
 				

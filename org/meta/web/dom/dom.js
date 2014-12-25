@@ -25,7 +25,7 @@
 					
 					// return
 					
-						if(this.isDocument((n = this.ownerOf(node)))) return DOM.isSame(n.documentElement, node) ;
+						if(this.isDocument((n = this.ownerOf(node)))) return this.isSame(n.documentElement, node) ;
 						
 					return false ;
 					
@@ -175,7 +175,7 @@
 					//
 
 						parent.appendChild(child) ;
-						
+
 					// return
 					
 					return child ;
@@ -196,66 +196,47 @@
 				/**
 				* Set the text content of the given node.
 				*
-				* @implementation IE only lets us change the text content after the window#load Event has completed. There is no apparent reason or explanation for that. As a fallback, if the text cannot be set directly the current Node is being cleared and a text Node for the given text is appended. Changing the text content of a STYLE Element will not work in IE≤8.
-				*
-				* @todo: remove polyfill.
 				* @link http://msdn.microsoft.com/en-us/library/ms533899(v=vs.85).aspx
 				* @link https://developer.mozilla.org/En/DOM/Node.textContent
 				* @link http://www.w3.org/TR/2004/REC-DOM-Level-3-Core-20040407/core.html#Node3-textContent
 				* @link http://www.phpied.com/dynamic-script-and-style-elements-in-ie/
 				*
-				* @param text (String) The String value to set the Node's text content to.
-				* @param node (Node) The Node whose text content to change.
-				*@todo polyfill
+				* @param (Node) node The Node whose text content to change.
+				* @param (String) text The String value to set the Node's text content to.
 				*/
-				setText: function setText(text, node)
-				{
+				setText: (function( ) {
+						if(isSet('innerText', DEFAULT_DOCUMENT.documentElement)) return function setText(node, text) { node.innerText = text ; } ;
+						else if(isSet('textContent', DEFAULT_DOCUMENT.documentElement)) return function setText(node, text) { node.textContent = text ; } ;
+						else error('Illegal State: Unknown DOM implementation.') ;
 
-/*@todo: use `(function(){})` function to determine the correct `setText` algorithm upon parsing.*/
-					//
-
-						if(isSet('innerText', node)) { node.innerText = text ; }
-						else if(isSet('textContent', node)) { node.textContent = text ; }
-
-				},
+				})( ),
 				/**
-				*Get the given node's text content.
+				* Get the given node's text content.
 				* @return String
-				* @todo polyfill
 				*/
-				getText: function getText(node)
-				{
-
-					// variables
-					
-					var s = null ;
-
-					// 
-
-						if(! isSet('textContent', node)) {
-
-								try { s = node.innerText ; }
-								catch(error) { }
-
+				getText: (function( ) {
+						if(isSet('innerText', DEFAULT_DOCUMENT.documentElement)) return function getText(node)
+						{
+								try { return node.innerText ; }
+								catch(error) { return null ; }
 						}
-						else { s = node.textContent ; }
-
-					// return 
-					
-					return s ;
-
-				},
+						else if(isSet('textContent', DEFAULT_DOCUMENT.documentElement)) return function getText(node) { return node.textContent ; } ;
+						else error('Illegal State: Unknown DOM implementation.') ;
+				})( ),
 				/**
 				*Add a text node with the given text content to the given node.
+				* @param (Node) node The Node to add text to.
+				* @param (String) text The text to add.
 				*/
-				addText: function addText(text, node)
+				addText: function addText(node, text)
 				{
 
 					//
 
-						node.appendChild(
+						this.append(
 								this.ownerOf(node)
-								.createTextNode(text)
+								.createTextNode(text),
+								node
 						) ;
 
 				},

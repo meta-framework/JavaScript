@@ -17,7 +17,11 @@
 		Library,
 		Configuration,
 		GLOBAL_OBJECT,
+		DEFAULT_WINDOW,
 		VOID,
+		NULL,
+		TRUE,
+		FALSE,
 		isVoid,
 		isSet,
 		isNull,
@@ -197,13 +201,18 @@
 				Function.prototype,
 				'bind',
 				{
-						/**@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind*/
-						value: function bind(thisArg)
+						/**
+						* @link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
+						* @link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind#Polyfill
+						* @todo full implementation
+						*/
+						value: function bind(thisArg/*, arg_1, arg_2, ...*/)
 						{
-							var self = this ;
-								args = arguments.length > 1 ? arrayCopy(arguments, 2) : null ;
-								if(args) return function anonymous( ) { self.apply(context, args) ; }
-								else return function anonymous( ) { self.call(context) ; }
+								assert(isFunction(this), 'Invalid Context: Context object must be function.') ;
+							var self = this,
+								args ;  ;
+								if((args = arguments.length > 1 ? arrayCopy(arguments, 1) : null)) return function anonymous( ) { self.apply(thisArg, args) ; }
+								else return function anonymous( ) { self.call(thisArg) ; }
 						},
 						configurable: true,
 						writable: true,
@@ -355,7 +364,7 @@
 		* This script expects the global context to be referenced by `this` when its being executed. The reference `this` is passed to the set-up function (this function wrapper) as its only formal parameter `GLOBAL_OBJECT`.
 		*/
 		GLOBAL_OBJECT = Core.GLOBAL_OBJECT = GLOBAL_OBJECT ;
-		Core.DEFAULT_WINDOW = (function( ) { try { if(typeof GLOBAL_OBJECT.window !== 'undefined') return GLOBAL_OBJECT.window ; } catch(e) { } return null ; })( ) ;
+		Core.DEFAULT_WINDOW = DEFAULT_WINDOW = (function( ) { try { if(typeof GLOBAL_OBJECT.window !== 'undefined') return GLOBAL_OBJECT.window ; } catch(e) { } return null ; })( ) ;
 		Core.DEFAULT_DOCUMENT = (function( ) { try { if(typeof GLOBAL_OBJECT.document !== 'undefined') return GLOBAL_OBJECT.document ; } catch(e) { } return null ; })( ) ;//GLOBAL_OBJECT.document || null ;
 		Core.IS_BROWSER = !! Core.DEFAULT_WINDOW && !! Core.DEFAULT_DOCUMENT ;
 
@@ -363,7 +372,7 @@
 
 		/**
 		* @link http://www.quirksmode.org/dom/w3c_cssom.html#screenview
-		* @todo review (algorithm is tentative)
+		* @tentative
 		*/
 		Core.IS_MOBILE = (function( ) {
  
@@ -373,7 +382,7 @@
 					{
  
 							try {
-									screen = GLOBAL_OBJECT.screen ;
+									screen = DEFAULT_WINDOW.screen ;
 									return screen.availWidth < 400 || screen.availHeight < 400 ;
 							}
 							catch(e) { }
@@ -382,6 +391,15 @@
  
 					return false ;
 		})( ) ;
+ 
+	//--- WebKit
+	
+		/**
+		* WebKit detection.
+		* @tentative
+		* @link http://stackoverflow.com/questions/18625321/detect-webkit-browser-in-javascript?lq=1#answer-21756811
+		*/
+		Core.IS_WEBKIT = (function( ) { return DEFAULT_WINDOW.navigator && DEFAULT_WINDOW.navigator.userAgent.indexOf('AppleWebKit') !== -1 ; })( ) ;
  
 	//--- IE
 
@@ -450,9 +468,12 @@
 		} ;
  
 	//-- Miscellaneous
+	// @todo need to be made constant (where possible)
 		
-		VOID = Core.VOID = void(0) ;
-//		Core.NULL = null ;
+		Core.VOID = VOID = void(0) ; // ensure `FALSE` is not alone
+		Core.NULL = NULL = null ; // ensure `VOID` is not alone
+		Core.TRUE = TRUE = true ; // ensure `NULL` is not alone
+		Core.FALSE = FALSE = false ; // ensure `TRUE` is not alone
  
 	//- Core Object Operations
 	// @todo use the homogenized operations of the core objects.
@@ -805,6 +826,8 @@
 		} ;
 
 	//- String Operations
+	
+		Core.stringEmpty = function stringEmpty(string) { return string === '' ; } ;
 
 		Core.stringQuote = stringQuote = function stringQuote(string)
 		{
@@ -838,7 +861,7 @@
 				return s ;
 
 		} ;
-		
+ 
 		Core.stringTokenize = stringTokenize = function stringTokenize(string, delimiter)
 		{
 		
@@ -911,7 +934,7 @@
 				return s ;
 			
 		} ;
-		
+ 
 	//- Array Operations
  
 		/**
@@ -1022,7 +1045,14 @@
  
 			//
  
-				for(var k in object) delete object[k] ;
+				for(var k in object)
+				{
+ 
+						delete object[k] ;
+ 
+						if(object[k]) object[k] = null ;
+ 
+				}
  
 		} ;
  
@@ -1223,7 +1253,7 @@
 				if((s = namespace.substring(previous, namespace.length)) === '') return ;
 
 				if(! isSet(s, o)) o = o[s] = { } ;
-				else if(! isObject((o = o[s]))) return ;
+				else if(! isObject((o = o[s]))) return ; // if the last step did not evaluate to an Object, the namespace cannot be create (since it's already set to a value)
 
 			// return
 			
@@ -1234,39 +1264,6 @@
 	//--- Ring Operations
 	// @note A ring is a doubly linked list where the list head is designated element
 	
-		/**
-		* Removes the top element of the given ring from the ring and returns the new top element.
-		* @return (Object) The new top element of the ring.
-		*/
-		Core.ringPop = ringPop = function ringPop(ring)
-		{
-
-			// variables
- 
-			var top  ;
- 
-			//
- 
-				if((top = ring.next) === ring) top = VOID ; // ring has only one element
-				else // ring has at least two elements
-				{
- 
-						/*Unlist the previous top element.*/
-						top.previous = ring.previous ;
-						ring.previous.next = top ;
- 
-				}
-
-				/*Remove pointers from the previous top element.*/
-				delete ring.next ;
-				delete ring.previous ;
- assert(top !== ring || (isSet('next', top) && isSet('previous', top)), '!') ;
-			// return
-
-				return top ;
- 
-		} ;
- 
 		/**
 		* @param (Object) ring The top element of the ring. If this is `null`, the second argument is made into the new top element of the ring.
 		* @return The top element of the ring.
@@ -1296,6 +1293,40 @@
  
 				}
 
+		} ;
+
+		/**
+		* Removes the top element of the given ring from the ring and returns the new top element.
+		* @return (Object) The new top element of the ring.
+		*/
+		Core.ringPop = ringPop = function ringPop(ring)
+		{
+
+			// variables
+ 
+			var top  ;
+ 
+			//
+ 
+				if((top = ring.next) === ring) top = VOID ; // ring has only one element
+				else // ring has at least two elements
+				{
+ 
+						/*Unlist the previous top element.*/
+						top.previous = ring.previous ;
+						ring.previous.next = top ;
+ 
+				}
+
+				/*Remove pointers from the previous top element./
+				delete ring.next ;
+				delete ring.previous ;
+*/
+ assert(top !== ring || (isSet('next', top) && isSet('previous', top)), '!') ;
+			// return
+
+				return top ;
+ 
 		} ;
  
 	//-- XHR Operations
@@ -1427,10 +1458,14 @@
  
 		/**
 		* Create a job for the given task list and add it to the queue.
+		*
+		* The arguments passed to this operation must be objects containing at least the property `callback`---the function containing the logic for the task---and optional event handlers for the job states (symbolic keys equivalent to the job event string identifiers "stopped", "active", "done")
+		*
+		* @param (Object) task... The task list.
 		*/
 		Core.enqueue = enqueue = function enqueue(task/*, ...*/)
 		{
-// console.log('Core::enqueue') ;
+
 			// variables
  
 			var job,
@@ -1443,7 +1478,7 @@
 				while(++i1 < i2) Queue.addTask(job, arguments[i1]) ;
 
 				Queue.addJob(job) ;
- 
+
 		} ;
  
 	//-- Library Operations
@@ -1452,93 +1487,41 @@
 		* @contract Tests whether the constructor for the given type identifier is defined or not. Might return `false` if the constructor has been set but the requirement process has not been resolved.
 		* @todo implement
 		*/
-		Core.isDefined = isDefined = function isDefined(identifier) { return isSet(identifier, Library.CONTRUCTORS) ; },
+		Core.isDefined = isDefined = function isDefined(identifier) { return isSet(identifier, Library.CONSTRUCTORS) ; },
 		/**
 		* @contract Defines a type constructor sans library management (i.e. based on the existing library only).
 		* @todo implement using object definition operations `Object.defineProperty`
 		* @return (Function) The constructor of the defined type.
 		* @deprecated: can be easily replaced by `Object.create(new extend( ), { ... })`
 		*/
-		Core.define = function define(properties)
+		Core.define = function define(identifier, properties)
 		{
  
 			// variables
  
-			var constructor, extend, main,
-				reflect, prototype, local, global ;
+			var constructor/*, extend, main*/,
+//				identifier,
+				reflect/*, prototype, local, global*/ ;
  
 			//
  
 
-				assert(isSet('identifier', properties), 'Illegal State: Missing required property "identifier"') ;
+//				assert(isSet('identifier', properties), 'Illegal State: Missing required property "identifier"') ;
  
-				identifier = properties.identifier ;
+//				identifier = properties.identifier ;
  
 				assert(! isSet(identifier, Library.CONSTRUCTORS), 'Illegal State: Type already defined (%s)', identifier) ;
- 
+// console.log('Core::define (%s)', identifier) ;
 				/*Create a constructor for the given type and store it on the library.*/
 				constructor = Library.CONSTRUCTORS[identifier] = Library.constructorFor(identifier) ;
+ 
+ 				reflect = constructor.reflect ;
+
+ 				/*Store the constructor under its namespace on the packages container of the library.*/
+				(objectCreateNamespace(reflect.namespace, Library.PACKAGES))[reflect.name] = constructor ;
+ 
 				Library.defineType(constructor, properties) ;
 
-/*
-				reflect = constructor.reflect ;
-//				reflect.global = [ ] ; // the list of global property keys
-//				reflect.local = [ ] ; // the list of local property keys
-
- console.log('::define') ;
- console.dir(constructor) ;
-				/*Build the the prototype object using the super type constructor and copy global properties.*
-				if((extend = properties.extend)) Library.definePrototype(extend, constructor)
-/*
-				{
-
-						constructor.prototype = new extend( ) ;
-console.log('prototype:') ;
-console.dir(constructor.prototype) ;
-						/*Copy global properties of the super type./
-						objectEach(constructor, function(v, k) { constructor[k] = v ; }) ;
-
-				}
-*
-				/*Validate the main method*
-				if((main = constructor.reflect.main = extend ? properties.main || extend.reflect.main : VOID)) assert(main.length > 0, 'Illegal State: Main operation must have at least one formal parameter.') ;
- 
-				/*Define local properties*
-				if((local = properties.local))
-				{
- 
-						prototype = constructor.prototype ;
-		 
-						objectEach(local, function(v, k) {
-								Object.defineProperty(prototype, k, {
-										value: v,
-										configurable: true,
-										writable: true,
-										enumerable: true
-								}) ;
-						}) ;
- 
-				}
- 
-				/*Define global properties.*
-				if((global = properties.global))
-				{
- 
-						objectEach(global, function(v, k) {
-								Object.defineProperty(constructor, k, {
-										value: v,
-										configurable: true,
-										writable: true,
-										enumerable: true
-								}) ;
-						}) ;
- 
-						/*Copy the super type's global properties (unless its overrides an existing property of the defined constructor).*
-						if(extend) objectEach(constructor, function(v, k) { if(! isSet(k, constructor)) constructor[k] = v ; }) ;
-						
-				}
- console.dir(constructor) ;
-*/
 			// return
 			
 			return constructor ;
@@ -1550,19 +1533,24 @@ console.dir(constructor.prototype) ;
  
 			// preconditions
  
-				assert(isSet(identifier, Library.CONSTRUCTORS), 'Invalid Argument: Type not defined (%s)', identifier) ;
+				assert(isSet(identifier, Library.CONSTRUCTORS), 'Invalid Argument: Type has not been defined (%s)', identifier) ;
 				
 			// variables
 			
-			var constructor ;
+			var constructor,
+				reflect ;
 			
 			//
 			
 				constructor = Library.CONSTRUCTORS[identifier] ;
-				
-				/*Destroy the constructor and remove it from the library.*/
+				reflect = constructor.reflect ;
+ 
+				/*Remove the constructor from the library.*/
+				delete Library.CONSTRUCTORS[reflect.identifier] ;
+				delete (objectResolveNamespace(reflect.namespace, Library.PACKAGES))[reflect.name] ;
+ 
+				/*Destroy the constructor.*/
 				objectDestroy(constructor) ;
-				delete Library.CONSTRUCTORS[identifier] ;
  
 		} ;
  
@@ -1581,14 +1569,25 @@ if(objectEvery(Library.STATE, function(state) { return state === Library.STATE_R
 {
 
 	Library.unlisten(Library.STATE_REQUIREMENT_RESOLVED) ;
-	callback( ) ;
+	callback.call(null, constructorOf(identifier)) ;
 	
 }
 				}) ;
  
 		} ;
  
-		Core.constructorOf = function constructorOf(identifier) { return Library.CONSTRUCTORS[identifier] || null ; }
+		/**
+		* Get the constructor for the given package identifier.
+		*/
+		Core.constructorOf = function constructorOf(identifier) { return Library.CONSTRUCTORS[identifier] || null ; } ;
+ 
+		Core.packageOf = function packageOf(namespace) { return objectResolveNamespace(namespace, Library.PACKAGES) ; } ;
+ 
+		/**
+		* Create a package for the given package identifier
+		*/
+		Core.packageFor = function packageFor(namespace) { return objectCreateNamespace(namespace, Library.PACKAGES) ; } ;
+ 
 
 	//-- Utility Operations
 	
@@ -1668,6 +1667,7 @@ if(objectEvery(Library.STATE, function(state) { return state === Library.STATE_R
 		* Where "a" -> "b" denotes a transition from state a to state b. Note that all states may contain a loop to themselves and that "done" is the terminal state.
 		* A transition from state a to state b follows a successful call to the event handler for state a. I.e. let <code> denote the event code for state a---and <data> be the event data object---, then if the call `job.handle(<code>, <data>)` returns true, a a transition to the next step may take place; otherwise, it must be checked again later.
 		* There may only be one state transition during one call to this operation for a single job. [The semaphor may be removed?]
+		* @todo The queue's timer should have varying intervals depending on the work load (going up to the maximum delay for a single job and down to the minimal delay once a given threshold of jobs is reached)
 		*/
 		Queue.switchJob = function switchJob( )
 		{
@@ -1689,7 +1689,7 @@ if(objectEvery(Library.STATE, function(state) { return state === Library.STATE_R
 				{
  assert(! isSet('TOP', Queue), 'Illegal State: Job collection is empty but queue has top element.') ;
 // console.log('(!) queue-empty') ;
-						if(Queue.TIMER) GLOBAL_OBJECT.clearInterval(Queue.TIMER) ;
+						if(Queue.TIMER) { GLOBAL_OBJECT.clearInterval(Queue.TIMER) ; delete Queue.TIMER ; }
  
 						return ;
  
@@ -1745,7 +1745,13 @@ assert(false, 'deprecated job event') ;
 								Queue.TOP = ringPop(top) ;
 assert(isSet(job.getID( ), jobs), '!') ;
 								delete jobs[job.getID( )] ;
-// console.log('(!) job-removed (%s)', job.getID( )) ;
+// console.log('Core::switchJob') ;
+// console.log('\t> job-done (%s):', job.getID( )) ;
+// Queue.printQueue( ) ;
+// console.log('\t> job-map:') ;
+// console.dir(Queue.JOBS) ;
+// console.log('\t> top-job:') ;
+// console.dir(Queue.TOP) ;
 								objectDestroy(job) ;
 // Queue.printQueue( ) ;
 						break ;
@@ -1797,7 +1803,6 @@ assert(isSet(job.getID( ), jobs), '!') ;
 		Queue.addJob = function addJob(job)
 		{
 // console.log('Queue::addJob(%s)', job.getID( )) ;
-// console.log('timer-active: %s', !!Queue.TIMER) ;
 			// preconditions
 			
 				assert(job instanceof Queue.JOB_CONSTRUCTOR, 'Invalid Argument: Type for formal parameter "job" must be `Job`.') ;
@@ -1813,7 +1818,6 @@ assert(isSet(job.getID( ), jobs), '!') ;
 				/*Enqueue the job on the ring queue.*/
 				if((top = Queue.TOP)) ringAdd(top, {job: job}) ;
 				else Queue.TOP = ringAdd(null, {job: job}) ;
-// Queue.printQueue( ) ;
 // console.dir(Queue.JOBS) ;
 				/*The queue now has at least one element. Reinstate the queue's watch dog timer if it was not set.*/
 				if(! isSet('TIMER', Queue)) Queue.TIMER = GLOBAL_OBJECT.setInterval(
@@ -1822,8 +1826,7 @@ assert(isSet(job.getID( ), jobs), '!') ;
 								try { Queue.switchJob( ) ; }
 								catch(e) {
 								
-										GLOBAL_OBJECT
-										.clearInterval(Queue.TIMER) ;
+										DEFAULT_WINDOW.clearInterval(Queue.TIMER) ;
 										
 										error('Queue Error: %s\nStack Trace: %s', e, e.stack) ;
 										
@@ -1832,7 +1835,11 @@ assert(isSet(job.getID( ), jobs), '!') ;
 						},
 						Configuration.get(Configuration.QUEUE_TIMER_INTERVAL)
 				) ;
-
+// console.log('timer-active: %s', !!Queue.TIMER) ;
+// console.log('\t> job-map:') ;
+// console.dir(Queue.JOBS) ;
+// console.log('\t> top-job:') ;
+// console.dir(Queue.TOP) ;
 
 		} ;
  
@@ -2415,9 +2422,7 @@ assert(Queue.TOP.job.getID( ) === job.getID( ), 'Illegal State: Job to continue 
 				(objectCreateNamespace(reflect.namespace, Library.PACKAGES))[reflect.name] = constructor ;
  
 				enqueue({
-						callback: function( ) {
-// console.log('(!) request-definition (%s)', identifier) ;
-								Library.requestDefinition(identifier) ; }, // this sets an entry for the required type on the constructors map of the library
+						callback: function( ) { Library.requestDefinition(identifier) ; }, // this sets an entry for the required type on the constructors map of the library
 						active: function( ) { // continue once the definition has been parsed
 								if(Library.getState(identifier) === Library.STATE_REQUEST_FINISHED) return -1 ;
 								else return 0 ;
@@ -2780,7 +2785,8 @@ error('error ("%s") :c', identifier) ;
 		Configuration.set(Configuration.DEBUG_MODE, 'debug')
 		.set(Configuration.APPLICATION_ROOT, 'test.Application')
 		.set(Configuration.LIBRARY_ROOT, '/library/javascript')
-		.set(Configuration.QUEUE_TIMER_INTERVAL, 10) ;
+		.set(Configuration.QUEUE_TIMER_INTERVAL, 1) ;
+//		.set(Configuration.QUEUE_TIMER_INTERVAL, 10) ;
 // console.log('library-root: %s', Configuration.get(Configuration.LIBRARY_ROOT)) ;
 
 	// Initialize Application

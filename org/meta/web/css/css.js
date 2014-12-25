@@ -11,6 +11,24 @@
 				MIME_CSS: 'text/css',
 				MEDIA_SCREEN: 'screen',
 				/**
+				* @link https://developer.mozilla.org/en-US/docs/Web/API/CSSRule
+				*/
+				RULE_TYPE_STYLE: 1,
+				RULE_TYPE_CHARSET: 2, // @charset
+				RULE_TYPE_IMPORT: 3, // @import
+				RULE_TYPE_MEDIA: 4, // @media
+				RULE_TYPE_FONT_FACE: 5, // @font-face
+				RULE_TYPE_PAGE_RULE: 6, // @page
+				RULE_TYPE_KEYFRAMES_RULE: 7, // @keyframes
+				RULE_TYPE_KEYFRAME_RULE: 8, // @keyframe
+				RULE_TYPE_NAMESPACE_RULE: 9,
+				RULE_TYPE_COUNTER_STYLE_RULE: 11,
+				RULE_TYPE_SUPPORTS_RULE: 12,
+				RULE_TYPE_DOCUMENT_RULE: 13,
+				RULE_TYPE_FONT_FEATURE_VALUES: 14,
+				RULE_TYPE_VIEWPORT_RULE: 15,
+				RULE_TYPE_REGION_STYLE: 16,
+				/**
 				* Return the the number of rule blocks associated with the given `CSSStyleSheet` object.
 				*
 				* @link https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleSheet
@@ -38,12 +56,19 @@ error('Unsupported Operation') ;
 				})( ),
 				/**
 				* @link https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleSheet.insertRule
+				* @link http://msdn.microsoft.com/en-us/library/ie/ms535871
+				*/
+				insertRule: (function( ) {
+						if(IE_VERSION >= 9.0 || IE_VERSION === -1.0) return function insertRule(sheet, rule, index) { return sheet.insertRule(rule, index) ; }
+						else error('Not implemented') ;
+				})( ),
+				/**
+				* @link https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleSheet.insertRule
+				* @link http://msdn.microsoft.com/en-us/library/ie/ms535871
+				* @todo rework: polyfill requires selector and rule block split for
 				*/
 				addRule: (function( ) {
-					
-					//
-					
-						if(IE_VERSION >= 9.0 || IE_VERSION === -1.0) return function addRule(sheet, block)
+						if(IE_VERSION >= 9.0 || IE_VERSION === -1.0) return function addRule(sheet, rule)
 						{
 
 							// variables
@@ -52,14 +77,16 @@ error('Unsupported Operation') ;
 							
 							//
 
-								sheet.insertRule(block, (i = CSS.lengthOf(sheet))) ;
+								sheet.insertRule(rule, (i = CSS.lengthOf(sheet))) ;
 								
 							// return
 
 							return i ;
 							
 						}
-						else return function addRule(sheet, block)
+						else error('Not implemented') ;
+						/*
+						else return function addRule(sheet, rule)
 						{
 						
 							// variables
@@ -68,14 +95,13 @@ error('Unsupported Operation') ;
 							
 							//
 
-								sheet.addRule((i = CSS.lengthOf(sheet)), block) ;
+								sheet.addRule((i = CSS.lengthOf(sheet)), rule) ;
 								
 							// return
 
 							return i ;
 							
-						}
-
+						}*/
 				})( ),
 				/**
 				* @link https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleSheet.deleteRule

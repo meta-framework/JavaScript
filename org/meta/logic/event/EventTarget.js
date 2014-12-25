@@ -3,8 +3,13 @@
 @extend org.meta.logic.Setable
 @require org.meta.logic.event.EventListener
 @description Basic implementation of an Object which raises events in the event model.
+@todo test; prevent concurrent modification of listener collection
 */
 {
+		main: function main(argv)
+		{
+				this.listeners = { } ;
+		},
 		local: {
 				/**@type Object*/
 				listeners: null,
@@ -13,39 +18,49 @@
 
 					//
 
-						/*Destroy the listeners map.*/
+						/*Destroy the listeners map./
 						objectDestroy(this.listeners) ;
-
-						EventTarget.super.invoke('destroy', this) ; // this implies a call to `org.meta.Object.prototype.destroy`
+*/
+						org.meta.logic.event.EventTarget.super.invoke('destroy', this) ; // this implies a call to `org.meta.Object.prototype.destroy`
 				
 				},
-				addListener: function addListener(name, listener)
+				addListener: function addListener(event, listener)
 				{
-
+// console.log('%s#addListener (%s)', this.constructor.getType( ), event) ;
+// console.log('listener-ring (pre):') ;
+// console.dir(this.listeners[event]) ;
 					// preconditions
 
 						assert(isInstanceOf(EventListener, listener), 'Illegal Argument: object for formal parameter `listener` has invalid type.') ;
 				
 					// variables
 					
-					var a ;
+					var listeners,
+						o ;
 
 					//
+					
+						o = {listener: listener} ;
+					
+						if(! (listeners = this.listeners[event])) this.listeners[event] = ringAdd(null, o) ;
+						else ringAdd(listeners, o) ;
+// console.log('listener-ring (post):') ;
+// console.dir(this.listeners[event]) ;
 
-						if(! (a = this.listeners[name])) { this.listeners[name] = a = [] ; }
+//						if(! (a = this.listeners[name])) { this.listeners[name] = a = [ ] ; }
 						
 						/*Prevent duplicate listener registration.*/
-						if(a.indexOf(listener) === -1) a[a.length] = listener ;
+//						if(a.indexOf(listener) === -1) a[a.length] = listener ;
 
 				},
 				/**
-				* Remove the given event listener from the event listener collection for the given event name.
+				* Removes all instances of the given event listener from the event listener collection for the given event name.
 				*
 				* This operation will _not_ destroy the listener since the caller may want to reuse it.
 				*
-				* @return (EventListener) The removed event listener or `null` if none was removed.
+				* @return (Void)
 				*/
-				removeListener: function removeListener(name, listener)
+				removeListener: function removeListener(event, listener)
 				{
 
 					// preconditions
@@ -54,88 +69,67 @@
 					
 					// variables
 					
-					var a ;
+					var top, next,
+						listener ;
 					
 					//
 					
+						if(! (top = this.listeners[event])) return ;
+						else
+						{
+						
+								next = top ;
+							
+								do
+								{
+										if(next.listener === listener) // element may be removed
+												if(next === top) top = this.listeners[event] = ringPop(next) ; // adjust the top element and cycle the reference to the top element
+												else ringPop(next) ; // simply remove the element (this can't be the top element therefore at least two elements exist)
+								}
+								while((next = next.next) !== top) ;
+							
+						}
+/*@deprecated
 						if((a = this.listeners[name]))
 								if((i = a.indexOf(listener)) !== -1)
 										return arrayRemove(a, i) ;
-					
-					// return
-					
-					return null ;
-					
-				},
-				/**
-				* Remove all event listeners for the given event name.
-				* @return (Array)
-				* @todo refactor into `.destroy` since this has no real practical application.
-				* @deprecated
-				*/
-				_removeAllListeners: function removeAllListeners(name)
-				{
-				
-					// variables
-					
-					var a ;
-					
-					//
-					
-						a = this.listeners[name] || null ;
-					
-						delete this.listeners[name] ;
-					
-					// return
-					
-					return a ;
-
+*/
 				},
 				/**
 				* @param (String) event The event name.
-				* @param (Object) data An object containing event data.
+				* @param (Object) detail An object the properties of which characterize the event.
 				*/
-				triggerEvent: function triggerEvent(event, data)
+				triggerEvent: function triggerEvent(event, detail)
 				{
-				
+// console.log('%s#triggerEvent (%s)', this.constructor.getType( ), event) ;
+// console.log('listener-ring:') ;
+// console.dir(this.listeners[event]) ;
 					// variables
 					
-					var a,
-						i = -1,
-						l,
-						b ;
+					var top, next,
+						data,
+						listener ;
 					
 					//
 					
-						if((a = this.listeners[event]))
+						if(! (top = this.listeners[event])) return ;
+						else
 						{
-
-								while((l = a[++i]))
+						
+								data = {type: event, target: this, detail: detail} ;
+								next = top ;
+							
+								do
 								{
-								
-										b = l.hasAttribute(EventListener.EXECUTE_ONCE) ;
-										/*Remove handlers to be executed at most once (flagged with `once=== true`) must be removed from the `listeners` container for the given event name before being called.*/
-										if(b)
-										{
-										
-												a.splice(i,1) ;
-												i-- ; // adjust index for removal of one element
-											
-										}
-										
-										l.handleEvent(data) ;
-									
-										/*Destroy the listener after handling the event.*/
-										if(b) l.destroy( ) ;
-								
+										if((listener = next.listener).hasAttribute(EventListener.EXECUTE_ONCE)) // element may be removed
+												if(next === top) top = this.listeners[event] = ringPop(next) ; // adjust the top element and cycle the reference to the top element
+												else ringPop(next) ; // simply remove the element (this can't be the top element therefore at least two elements exist)
+										listener.handleEvent(data) ;
 								}
+								while((next = next.next) !== top) ;
 
 						}
-						
-					// return
-					
-					return this ;					
-					
+
 				}
 		}
 }

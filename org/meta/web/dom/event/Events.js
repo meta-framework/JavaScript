@@ -10,7 +10,12 @@
 				BUBBLING_EVENT: 1 << 1,
 //				EVENT_DOCUMENT_READY: 'ready',
 				EVENT_WINDOW_LOAD: 'load',
+				EVENT_WINDOW_BEFORE_UNLOAD: 'beforeunload',
 				EVENT_WINDOW_UNLOAD: 'unload',
+				/**
+				* @deprecated
+				*/
+				EVENT_LOCATION_HASHCHANGE: 'hashchange',
 				/**
 				* @link https://developer.mozilla.org/en-US/docs/Web/API/EventTarget.addEventListener
 				* @link https://developer.mozilla.org/en-US/docs/DOM/event
@@ -71,13 +76,13 @@
 				triggerEvent: (function( ) {
 						if(isSet('CustomEvent', GLOBAL_OBJECT)) return function triggerEvent(target, event, properties)
 						{
-								target.dispatchEvent(new CustomEvent(event, properties))
+								target.dispatchEvent(new CustomEvent(event, properties)) ;
 						}
-						else if(isSet('Event', GLOBAL_OBJECT)) return function triggerEvent(target, event, data)
+						else if(isSet('Event', GLOBAL_OBJECT)) return function triggerEvent(target, event, properties)
 						{
 error('Not implemented') ;
 						}
-						else if(iSet('createEvent', DEFAULT_DOCUMENT)) return function triggerEvent(target, event, data)
+						else if(iSet('createEvent', DEFAULT_DOCUMENT)) return function triggerEvent(target, event, properties)
 						{
 error('Not implemented') ;
 						}
@@ -94,12 +99,38 @@ error('Not implemented') ;
 						Events.addListener(window, Events.EVENT_WINDOW_LOAD, callback) ;
 
 				},
+				/**
+				* @link https://developer.mozilla.org/en-US/docs/Web/Events/beforeunload
+				* @link http://msdn.microsoft.com/en-us/library/ms536907%28VS.85%29.aspx
+				* @param (String) message An optional confirmation message to be displayed to the user in a modal dialogue.
+				* @todo full polyfill
+				* @todo allow only one listener (using memo function technique)
+				*/
+				onBeforeUnload: (function( ) {
+						if(isSet('onbeforeunload', DEFAULT_WINDOW)) return function(window, callback, message) // the `onbeforeunload` property is initialized to null, if it's not there it's `undefined`
+						{
+						
+							// preconditions
+							
+								assert(isWindow(window), 'Invalid Argument: Argument for formal parameter "window" must be DOM window.') ;
+								
+							//
+
+								this.addListener(window, Events.EVENT_WINDOW_BEFORE_UNLOAD, function(data) { (data || window.event).returnValue = message ; callback.call(null, data) ; return message ; }) ;
+
+						}
+						error('Not implemented.') ;
+				})( ),
+				/**
+				* @link https://developer.mozilla.org/en-US/docs/Web/Events/unload
+				* @link http://msdn.microsoft.com/en-us/library/ie/ms536973%28v=vs.85%29.aspx
+				*/
 				onUnload: function onUnload(window, callback)
 				{
 				
 					// preconditions
 					
-						assert(isWindow(window), 'Invalid Argument: Argument for formal parameter "window" must be window object.') ;
+						assert(isWindow(window), 'Invalid Argument: Argument for formal parameter "window" must be DOM window.') ;
 						
 					//
 					
@@ -109,6 +140,7 @@ error('Not implemented') ;
 				/**
 				* @link https://developer.mozilla.org/en-US/docs/Web/API/document.readyState
 				* @link http://stackoverflow.com/questions/9899372/pure-javascript-equivalent-to-jquerys-ready-how-to-call-a-function-when-the
+				* @todo test the bound functions arguments
 				*/
 				onReady: (function ( ) {
 						if(isSet('addEventListener', DEFAULT_DOCUMENT)) return function onReady(document, callback)
@@ -129,16 +161,13 @@ error('Not implemented') ;
 								else
 								{
 								
-										listener = Function.prototype.bind.apply(
-												function(event, listener, callback) {
+										listener = (function(event, listener, callback) {
 console.log('document-ready-listener:')
 Array.prototype.forEach(arguments, function(argument, index) {console.log('argument #%s: %s', index, argument);}) ;
-														Events.removeListener('DOMContentLoaded', listener, document) ;
-														callback.call(null, event) ;
-														
-												},
-												[listener, callback]
-										) ;
+												Events.removeListener('DOMContentLoaded', listener, document) ;
+												callback.call(null, event) ;
+												
+										}).bind(null, listener, callback) ;
 
 										Events.addListener('DOMContentLoaded', listener, document) ;
 								}

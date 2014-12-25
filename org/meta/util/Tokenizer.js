@@ -23,7 +23,7 @@ console.log('Tokenizer.tokenize(%s)', token) ;
 						while((index = this.string.indexOf(token, last)) !== -1)
 						{
 						
-								callback.apply(null, [this.string.substring(last, index), ++counter]) ;
+								if(callback.apply(null, [this.string.substring(last, index), ++counter]) === false) return ; // break in case the callback returns false
 								
 								last = index + skip ;
 								
@@ -32,7 +32,7 @@ console.log('Tokenizer.tokenize(%s)', token) ;
 						/*Gather a potential trailing substring after the last delimiter's index (or the start index if none was found).*/
 						stop = this.string.length ;
 					
-						if(last + 1 < stop) callback.apply(null, [this.string.substring(last, stop), ++counter]) ;
+						if(last + 1 < stop) callback.apply(null, [this.string.substring(last, stop), ++counter]) ; // strictly speaking we should return upon a false return of the callback, but this is the last statement anyway
 				
 				}
 		}

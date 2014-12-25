@@ -116,10 +116,45 @@
 								} ;
 						else error('DOM implementation does not support `Element.prototype.querySelectorAll`.') ;
 				})( ),
+				hasAttribute: function hasAttribute(element, name) { return DOM.hasAttribute(element, name/*,  HTML.NAMESPACE_URI_XHTML*/) ; },
 				setAttribute: function setAttribute(element, name, value) { DOM.setAttribute(element, name, value/*, HTML.NAMESPACE_URI_XHTML*/) ; },
 				getAttribute: function getAttribute(element, name) { return DOM.getAttribute(element, name/*, HTML.NAMESPACE_URI_XHTML*/) ; },
 				removeAttribute: function removeAttribute(element, name) { return DOM.removeAttribute(eleemnt, name/*,  HTML.NAMESPACE_PREFIX_XHTML*/) ; },
-				hasAttribute: function hasAttribute(element, name) { return DOM.hasAttribute(element, name/*,  HTML.NAMESPACE_URI_XHTML*/) ; },
+				hasClass: (function( ) {
+						if(isSet('classList', DEFAULT_DOCUMENT.documentElement)) return function hasClass(element, name)
+						{
+						
+							// preconditions
+							
+								assert(this.isElement(element), 'Illegal Argument: invalid type for formal parameter `element`') ;
+								
+							// return
+							
+							return element.classList.contains(name) ;
+						
+						}
+						else return function hasClass(element, name)
+						{
+						
+							// preconditions
+							
+								assert(this.isElement(element), 'Illegal Argument: invalid type for formal parameter `element`') ;
+								
+							// variables
+							
+							var b = false ;
+							
+							//
+								
+								new Tokenizer(HTML.getClass( ))
+								.tokenize(' ', function(token) {if(token === name) { b = true ; return false ; }}) ;
+								
+							//
+							
+							return b ;
+							 
+						}
+				})( ),
 				setClass: function setClass(element, name)
 				{
 				
@@ -144,46 +179,6 @@
 					return element.className ;
 
 				},
-				hasClass: (function( ) {
-						if(isSet('classList', DEFAULT_DOCUMENT.documentElement))
-								return function hasClass(element, name)
-								{
-								
-									// preconditions
-									
-										assert(this.isElement(element), 'Illegal Argument: invalid type for formal parameter `element`') ;
-										
-									// return
-									
-									return element.classList.contains(name) ;
-								
-								}
-						else
-						{
-console.log('(!) Warning: no `classList` property!') ;
-								return function hasClass(element, name)
-								{
-								
-									// preconditions
-									
-										assert(this.isElement(element), 'Illegal Argument: invalid type for formal parameter `element`') ;
-										
-									// variables
-									
-									var a ;
-									
-									//
-										
-										a = new Tokenizer(HTML.getClass( ))
-										.tokenize(' ') ;
-										
-									//
-									
-									return a.indexOf(name) !== -1 ;
-									 
-								}
-						}
-				})( ),
 				/**
 				* Adds the class for the given name on the given element if it does not exist yet.
 				*/

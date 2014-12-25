@@ -70,7 +70,7 @@
 				
 					// preconditions
 					
-						assert(this.isActive( ), 'Illegal State: operation `call` requires active object.') ;
+//						assert(this.isActive( ), 'Illegal State: operation `call` requires active object.') ;
 						
 					//
 					
