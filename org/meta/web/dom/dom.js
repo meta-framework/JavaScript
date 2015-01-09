@@ -194,6 +194,13 @@
 				
 				},
 				/**
+				* https://developer.mozilla.org/en-US/docs/Web/API/Node.hasChildNodes
+				*/
+				clear: function clear(element)
+				{
+						while(element.hasChildNodes( )) this.remove(element.firstChild, element) ;
+				},
+				/**
 				* Set the text content of the given node.
 				*
 				* @link http://msdn.microsoft.com/en-us/library/ms533899(v=vs.85).aspx
@@ -321,60 +328,6 @@
 
 						return false ;
 
-				},
-				/**
-				* @link https://developer.mozilla.org/en-US/docs/Web/API/EventTarget.addEventListener
-				* @link https://developer.mozilla.org/en-US/docs/DOM/event
-				* @link http://msdn.microsoft.com/en-us/library/ie/ms535863%28v=vs.85%29.aspx
-				* @link name (String) The String identifier of the Event type (e.g. 'load').
-				* @link listener (Function, org.meta.web.dom.event.EventListener) A listener object.
-				* @link target (Element, Window) The target of the the event listener registration.
-				* @todo: capture, legacy (?)
-				* @deprecated: refactored into `Events`
-				*/
-				_addListener: (function( ) {
-						if(isSet('addEventListener', DEFAULT_DOCUMENT)) return function addListener(name, listener, target)
-						{
-					
-							//
-							
-
-								target.addEventListener(name, listener, false) ;
-								
-						}
-						else if(isSet('attachEvent', DEFAULT_DOCUMENT)) return function addListener(name, listener, target)
-						{
-						
-							//
-							
-								target.attachEvent('on' + name, listener) ;
-
-						}
-						else error('Unknown DOM event model implementation.') ;
-				})( ),
-				/**
-				* @todo: capture, legacy (?)
-				* @deprecated: refactored into `Events`
-				*/
-				_removeListener: (function( ) {
-						if(isSet('removeEventListener', DEFAULT_DOCUMENT)) return function removeListener(name, listener, target)
-						{
-					
-							//
-							
-
-								target.removeEventListener(name, listener, false) ;
-								
-						}
-						else if(isSet('detachEvent', DEFAULT_DOCUMENT)) return function removeListener(name, listener, target)
-						{
-						
-							//
-							
-								target.detachEvent('on' + name, listener) ;
-
-						}
-						else error('Unknown DOM event model implementation.') ;
-				})( )
+				}
 		}
 }

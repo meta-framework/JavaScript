@@ -155,7 +155,6 @@ console.log('URI::create') ;
 							uri.setFragment(a1[5]) ;
 							
 							/*Parse Authority*/
-
 							if((s = a1[1]))
 							{
 							
@@ -310,29 +309,6 @@ console.log('URI::create') ;
 						// return
 
 							return null ;
-
-					},
-					_getFileIdentifier: function getFileIdentifier( )
-					{
- 
-						// variables
- 
-						var builder,
-							s ;
- 
-						//
-							builder = new StringBuilder(this.getPath( )) ;
- 
-							if((s = this.getQuery( )))
-									builder.append('?')
-									.append(s) ;
-							if((s = this.getFragment( )))
-									builder.append('#')
-									.append(s) ;
- 
-						// return
-
-							return builder.build( ) ;
 
 					},
 					toURIString: function toURIString( )

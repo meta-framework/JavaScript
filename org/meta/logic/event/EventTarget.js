@@ -18,39 +18,30 @@
 
 					//
 
-						/*Destroy the listeners map./
-						objectDestroy(this.listeners) ;
-*/
 						org.meta.logic.event.EventTarget.super.invoke('destroy', this) ; // this implies a call to `org.meta.Object.prototype.destroy`
 				
 				},
-				addListener: function addListener(event, listener)
+				addListener: function addListener(type, listener)
 				{
-// console.log('%s#addListener (%s)', this.constructor.getType( ), event) ;
-// console.log('listener-ring (pre):') ;
-// console.dir(this.listeners[event]) ;
+
 					// preconditions
 
-						assert(isInstanceOf(EventListener, listener), 'Illegal Argument: object for formal parameter `listener` has invalid type.') ;
+						assert(isFunction(listener) || isInstanceOf(EventListener, listener), 'Illegal Argument: Object for formal parameter `listener` must be `Function` or instance of `org.meta.logic.event.EventListener`.') ;
 				
 					// variables
 					
 					var listeners,
+						ring,
 						o ;
 
 					//
 					
+						if(! (listeners = this.listeners)) listeners = this.listeners = { } ;
+					
 						o = {listener: listener} ;
 					
-						if(! (listeners = this.listeners[event])) this.listeners[event] = ringAdd(null, o) ;
-						else ringAdd(listeners, o) ;
-// console.log('listener-ring (post):') ;
-// console.dir(this.listeners[event]) ;
-
-//						if(! (a = this.listeners[name])) { this.listeners[name] = a = [ ] ; }
-						
-						/*Prevent duplicate listener registration.*/
-//						if(a.indexOf(listener) === -1) a[a.length] = listener ;
+						if(! (ring = listeners[type])) listeners[type] = ringAdd(null, o) ;
+						else ringAdd(ring, o) ;
 
 				},
 				/**
@@ -60,12 +51,12 @@
 				*
 				* @return (Void)
 				*/
-				removeListener: function removeListener(event, listener)
+				removeListener: function removeListener(type, listener)
 				{
 
 					// preconditions
 					
-						assert(isInstanceOf(EventListener, listener), 'Illegal Argument: object for formal parameter `listener` has invalid type.') ;
+						assert(isFunction(listener) || isInstanceOf(EventListener, listener), 'Illegal Argument: Object for formal parameter `listener` must be `Function` or instance of `org.meta.logic.event.EventListener`.') ;
 					
 					// variables
 					
@@ -74,7 +65,7 @@
 					
 					//
 					
-						if(! (top = this.listeners[event])) return ;
+						if(! (top = this.listeners[type])) return ;
 						else
 						{
 						
@@ -83,50 +74,52 @@
 								do
 								{
 										if(next.listener === listener) // element may be removed
-												if(next === top) top = this.listeners[event] = ringPop(next) ; // adjust the top element and cycle the reference to the top element
-												else ringPop(next) ; // simply remove the element (this can't be the top element therefore at least two elements exist)
+												if(next === top) top = this.listeners[type] = ringPop(next) ; // if this is the top element, adjust the top element and cycle the reference to the top element
+												else ringPop(next) ; // if this is not the top element, simply remove it
 								}
-								while((next = next.next) !== top) ;
+								while(top && (next = next.next) !== top) ; // the test for the existence of the top element eliminates a fringe case, where a single top element was removed (this leads to infinite recursion, since `next.next` points to `next` and `top` does not equal `next` since `top` is undefined and `next` is an object).
+							
+								if(! top) this.listeners[type] = null ;
+								if(objectEmpty(this.listeners)) this.listeners = null ;
 							
 						}
-/*@deprecated
-						if((a = this.listeners[name]))
-								if((i = a.indexOf(listener)) !== -1)
-										return arrayRemove(a, i) ;
-*/
+
 				},
 				/**
-				* @param (String) event The event name.
-				* @param (Object) detail An object the properties of which characterize the event.
+				* @param (String) type The event name.
+				* @param (Object) properties An object containing properties characterizing the event.
 				*/
-				triggerEvent: function triggerEvent(event, detail)
+				triggerEvent: function triggerEvent(type, properties)
 				{
-// console.log('%s#triggerEvent (%s)', this.constructor.getType( ), event) ;
-// console.log('listener-ring:') ;
-// console.dir(this.listeners[event]) ;
+// console.log('%s#triggerEvent (%s)', this.constructor.getType( ), type) ;
 					// variables
 					
 					var top, next,
-						data,
-						listener ;
+						event,
+						listener,
+						callback ;
 					
 					//
 					
-						if(! (top = this.listeners[event])) return ;
+						if(! (top = this.listeners[type])) return ;
 						else
 						{
 						
-								data = {type: event, target: this, detail: detail} ;
+								event = {type: type, target: this, detail: properties.detail} ;
 								next = top ;
 							
 								do
 								{
+
 										if((listener = next.listener).hasAttribute(EventListener.EXECUTE_ONCE)) // element may be removed
-												if(next === top) top = this.listeners[event] = ringPop(next) ; // adjust the top element and cycle the reference to the top element
-												else ringPop(next) ; // simply remove the element (this can't be the top element therefore at least two elements exist)
-										listener.handleEvent(data) ;
+												if(next === top) top = this.listeners[type] = ringPop(next) ; // if this is the top element, adjust the top element and cycle the reference to the top element
+												else ringPop(next) ; // if this is not the top element, simply remove it
+
+										if(isFunction(listener)) listener.call(null, event) ;
+										else listener.handleEvent(event) ;
+
 								}
-								while((next = next.next) !== top) ;
+								while(top && (next = next.next) !== top) ; // the test for the existence of the top element eliminates a fringe case, where a single top element was removed (this leads to infinite recursion, since `next.next` points to `next` and `top` does not equal `next` since `top` is undefined and `next` is an object).
 
 						}
 

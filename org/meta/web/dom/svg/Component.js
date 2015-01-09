@@ -9,15 +9,15 @@
 		{
 				setAttribute: function setAttribute(name, value, namespace)
 				{
-						SVG.setAttribute(name, value, this.root) ;
+						SVG.setAttribute(this.target, name, value) ;
 				},
 				getAttribute: function getAttribute(name, namespace)
 				{
-						return SVG.getAttribute(name, this.root) ;
+						return SVG.getAttribute(this.target, name) ;
 				},
 				hasAttribute: function hasAttribute(name, namespace)
 				{
-						return SVG.hasAttribute(name, value, this.root) ;
+						return SVG.hasAttribute(this.target, name, value) ;
 				}
 				
 		}

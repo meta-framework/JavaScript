@@ -1,72 +1,64 @@
 /*
 @identifier org.meta.web.dom.event.Events
 @extend org.meta.Object
-@require org.meta.web.dom.DOM
+@require org.meta.web.dom.DOM, org.meta.web.dom.event.EventListener
+@todo All listeners should by default be removed after the first call in order to avoid redundant listener registrations.
 */
 {
 		global:
 		{
-				CANCELABLE_EVENT: 1,
-				BUBBLING_EVENT: 1 << 1,
-//				EVENT_DOCUMENT_READY: 'ready',
+				EVENT_CLICK: 'click',
+				EVENT_DOCUMENT_DOM_CONTENT_LOADED: 'DOMContentLoaded',
+				EVENT_DOCUMENT_READY_STATE_CHANGE: 'readystatechange',
+				EVENT_WINDOW_HASH_CHANGE: 'hashchange',
 				EVENT_WINDOW_LOAD: 'load',
 				EVENT_WINDOW_BEFORE_UNLOAD: 'beforeunload',
 				EVENT_WINDOW_UNLOAD: 'unload',
 				/**
-				* @deprecated
-				*/
-				EVENT_LOCATION_HASHCHANGE: 'hashchange',
-				/**
 				* @link https://developer.mozilla.org/en-US/docs/Web/API/EventTarget.addEventListener
 				* @link https://developer.mozilla.org/en-US/docs/DOM/event
+				* @link http://msdn.microsoft.com/en-us/library/ie/ms536343%28v=vs.85%29.aspx
 				* @link http://msdn.microsoft.com/en-us/library/ie/ms535863%28v=vs.85%29.aspx
-				* @oaram event (String) The String identifier of the event type (e.g. 'load').
-				* @param listener (Function, org.meta.web.dom.event.EventListener) A listener object.
 				* @param target (Element, Window) The target of the the event listener registration.
-				* @todo: capture, legacy (?)
+				* @oaram type (String) The String identifier of the event type (e.g. 'load').
+				* @param listener (Function, org.meta.web.dom.event.EventListener) A listener object.
+				* @todo: polyfill; capture/ bubble
 				*/
 				addListener: (function( ) {
-						if(isSet('addEventListener', DEFAULT_DOCUMENT)) return function addListener(target, event, listener)
+						if(isSet('addEventListener', DEFAULT_DOCUMENT)) return function addListener(target, type, listener)
 						{
-					
-							//
-							
 
-								target.addEventListener(event, listener, false) ;
+							// preconditions
+							
+								assert(isFunction(listener) || isInstanceOf(EventListener, listener), 'Invalid Argument: Argument for formal parameter "listener" must be `Function` or instance of `org.meta.web.dom.event.EventListener`') ;
+								
+							//
+
+								target.addEventListener(type, listener) ;
 								
 						}
-						else if(isSet('attachEvent', DEFAULT_DOCUMENT)) return function addListener(target, event, listener)
-						{
-						
-							//
-							
-								target.attachEvent('on' + event, listener) ;
-
-						}
-						else error('Unknown DOM event model implementation.') ;
+						else error('Not implemented.') ;
 				})( ),
 				/**
-				* @todo: capture, legacy (?)
+				* @param target (Element, Window) The target of the the event listener registration.
+				* @oaram type (String) The String identifier of the event type (e.g. 'load').
+				* @param listener (Function, org.meta.web.dom.event.EventListener) A listener object.
+				* @todo: polyfill; capture/ bubble
 				*/
 				removeListener: (function( ) {
-						if(isSet('removeEventListener', DEFAULT_DOCUMENT)) return function removeListener(target, event, listener)
+						if(isSet('removeEventListener', DEFAULT_DOCUMENT)) return function removeListener(target, type, listener)
 						{
 					
-							//
+							// preconditions
 							
+								assert(isFunction(listener) || isInstanceOf(EventListener, listener), 'Invalid Argument: Argument for formal parameter "listener" must be  `Function` or instance of `org.meta.web.dom.event.EventListener`') ;
+								
+							//
 
-								target.removeEventListener(event, listener, false) ;
+								target.removeEventListener(type, listener) ;
 								
 						}
-						else if(isSet('detachEvent', DEFAULT_DOCUMENT)) return function removeListener(target, event, listener)
-						{
-						
-							//
-							
-								target.detachEvent('on' + event, listener) ;
-
-						}
-						else error('Unknown DOM event model implementation.') ;
+						else error('Not implemented.') ;
 				})( ),
 				/**
 				* @link https://developer.mozilla.org/en-US/docs/Web/Guide/Events/Creating_and_triggering_events
@@ -74,15 +66,17 @@
 				* @link https://developer.mozilla.org/en-US/docs/Web/API/Event
 				*/
 				triggerEvent: (function( ) {
-						if(isSet('CustomEvent', GLOBAL_OBJECT)) return function triggerEvent(target, event, properties)
+						if(isSet('CustomEvent', GLOBAL_OBJECT)) return function triggerEvent(target, type, properties)
 						{
-								target.dispatchEvent(new CustomEvent(event, properties)) ;
+// console.log('Events#triggerEvent (%s)', type) ;
+// console.log('\t> properties:') ; console.dir(properties) ;
+								target.dispatchEvent(new CustomEvent(type, properties)) ;
 						}
-						else if(isSet('Event', GLOBAL_OBJECT)) return function triggerEvent(target, event, properties)
+						else if(isSet('Event', GLOBAL_OBJECT)) return function triggerEvent(target, type, detail)
 						{
 error('Not implemented') ;
 						}
-						else if(iSet('createEvent', DEFAULT_DOCUMENT)) return function triggerEvent(target, event, properties)
+						else if(iSet('createEvent', DEFAULT_DOCUMENT)) return function triggerEvent(target, type, detail)
 						{
 error('Not implemented') ;
 						}
@@ -96,7 +90,7 @@ error('Not implemented') ;
 						
 					//
 					
-						Events.addListener(window, Events.EVENT_WINDOW_LOAD, callback) ;
+						this.addListener(window, this.EVENT_WINDOW_LOAD, callback) ;
 
 				},
 				/**
@@ -116,7 +110,7 @@ error('Not implemented') ;
 								
 							//
 
-								this.addListener(window, Events.EVENT_WINDOW_BEFORE_UNLOAD, function(data) { (data || window.event).returnValue = message ; callback.call(null, data) ; return message ; }) ;
+								this.addListener(window, this.EVENT_WINDOW_BEFORE_UNLOAD, function(event) { (event || window.event).returnValue = message ; callback.call(null, event) ; return message ; }) ;
 
 						}
 						error('Not implemented.') ;
@@ -134,9 +128,24 @@ error('Not implemented') ;
 						
 					//
 					
-						Events.addListener(window, Events.EVENT_WINDOW_UNLOAD, callback) ;
+						this.addListener(window, this.EVENT_WINDOW_UNLOAD, callback) ;
 
 				},
+				onHashChange: (function( ) {
+						if(isSet('onhashchange', DEFAULT_WINDOW)) return function onHashChange(window, callback)
+						{
+				
+							// preconditions
+							
+								assert(isWindow(window), 'Invalid Argument: Argument for formal parameter "window" must be DOM window.') ;
+								
+							//
+
+								this.addListener(window, this.EVENT_WINDOW_HASH_CHANGE, callback) ;
+
+						}
+						else error('Not implemented') ;
+				})( ),
 				/**
 				* @link https://developer.mozilla.org/en-US/docs/Web/API/document.readyState
 				* @link http://stackoverflow.com/questions/9899372/pure-javascript-equivalent-to-jquerys-ready-how-to-call-a-function-when-the
@@ -164,12 +173,12 @@ error('Not implemented') ;
 										listener = (function(event, listener, callback) {
 console.log('document-ready-listener:')
 Array.prototype.forEach(arguments, function(argument, index) {console.log('argument #%s: %s', index, argument);}) ;
-												Events.removeListener('DOMContentLoaded', listener, document) ;
+												Events.removeListener(Events.EVENT_DOCUMENT_DOM_CONTENT_LOADED, listener, document) ;
 												callback.call(null, event) ;
 												
 										}).bind(null, listener, callback) ;
 
-										Events.addListener('DOMContentLoaded', listener, document) ;
+										this.addListener('DOMContentLoaded', listener, document) ;
 								}
 
 						}
@@ -195,14 +204,14 @@ Array.prototype.forEach(arguments, function(argument, index) {console.log('argum
 												function(event, listener, callback) {
 console.log('document-ready-listener:')
 Array.prototype.forEach(arguments, function(argument, index) {console.log('argument #%s: %s', index, argument);}) ;
-														Events.removeListener('readystatechange', listener, document) ;
+														Events.removeListener(Events.EVENT_DOCUMENT_READY_STATE_CHANGE, listener, document) ;
 														callback.call(null, event) ;
 														
 												},
 												[listener, callback]
 										) ;
 
-										Events.addListener('readystatechange', listener, document) ;
+										this.addListener('readystatechange', listener, document) ;
 								}
 
 						}

@@ -1,7 +1,7 @@
 /*
 @identifier org.meta.web.dom.html.Container
 @extend org.meta.web.dom.html.Component
-@require org.meta.web.dom.html.HTML, org.meta.web.css.CSSStyle
+@require org.meta.web.dom.html.HTML, org.meta.web.css.CSS, org.meta.web.css.CSSStyleDeclaration
 @description An HTML container element wrapper (vulgo: "DIV wrapper").
 */
 {
@@ -15,7 +15,23 @@
 				LAYOUT_ALIGN_RIGHT: 1 << 5,
 				create: function create(document, layout)
 				{
-						return Container.super.create.apply(this, [HTML.createElement(document, 'div'), layout])
+				
+					// variables
+					
+					var container,
+						element ;
+					
+					//
+					
+						element = HTML.createElement(document, 'div') ;
+						container = new this(element, new CSSStyleDeclaration(element.style), layout)
+						container.setAttribute('id', Component.createComponentID(container)) ;
+						container.setAttribute('class', Component.createComponentClass(container)) ;
+					
+					// return
+
+						return container ;
+
 				}
 		},
 		local:
@@ -26,28 +42,45 @@
 				draw: function draw(sheet)
 				{
 // console.log('org.meta.web.dom.html.Container.draw') ;
-						this.style.setProperty('display', 'block') ;
-						this.style.setProperty('position', 'relative') ;
+
+					// variables
+					
+					var properties ;
+					
+					//
+					
+					
+						properties = {
+								'display': 'block',
+								'position': 'relative'
+						} ;
 
 						if((this.layout & Container.LAYOUT_COVER) !== 0)
 						{
-
-								this.setWidth('100%') ;
-								this.setHeight('100%') ;
 							
-								if((this.layout & Container.LAYOUT_COVER_WIDTH) !== 0) this.setHeight('auto') ;
-								if((this.layout & Container.LAYOUT_COVER_HEIGHT) !== 0) this.setWidth('auto') ;
+								if((this.layout & Container.LAYOUT_COVER_WIDTH) !== 0){
+										properties[CSS.PROPERTY_WIDTH] = '100%' ;
+										properties[CSS.PROPERTY_HEIGHT] = 'auto' ;
+								}
+								if((this.layout & Container.LAYOUT_COVER_HEIGHT) !== 0)
+								{
+										properties[CSS.PROPERTY_WIDTH] = 'auto' ;
+										properties[CSS.PROPERTY_HEIGHT] = '100%' ;
+								}
 
 						}
+
 						if((this.layout & Container.LAYOUT_ALIGN) !== 0)
 						{
 						
-								this.style.setProperty('margin', '0 auto') ;
+								properties[CSS.PROPERTY_MARGIN] = '0 auto' ;
 							
-								if((this.layout & Container.LAYOUT_ALIGN_LEFT) !== 0) this.style.setProperty('margin-left: 0') ;
-								if((this.layout & Container.LAYOUT_ALIGN_RIGHT) !== 0) this.style.setProperty('margin-right: 0') ;
+								if((this.layout & Container.LAYOUT_ALIGN_LEFT) !== 0) properties['margin-left'] = '0' ;
+								if((this.layout & Container.LAYOUT_ALIGN_RIGHT) !== 0) properties['margin-right'] = '0' ;
 							
 						}
+					
+						this.style.addRules(Component.createComponentClassSelector(this), properties) ;
 
 						org.meta.web.dom.html.Container.super.invoke('draw', this, sheet)
 
@@ -60,29 +93,37 @@
 				{
 					//..
 				},
+				/**
+				* @contract Sets the width property specifically for this component's root element (not the class of elements induced by the type).
+				*/
 				setWidth: function setWidth(value)
 				{
-						this.style.setProperty(CSSStyle.WIDTH, value) ;
+						this.style.setRule(stringFormat('#%s', this.getID( )), 'width', value) ;
 				},
-				getWidth: function getWidth( )
-				{
-						this.style.getProperty(CSSStyle.WIDTH) ;
-				},
+				/**
+				* @contract Sets the height property specifically for this component's root element (not the class of elements induced by the type).
+				*/
 				setHeight: function setHeight(value)
 				{
-						this.style.setProperty(CSSStyle.HEIGHT, value) ;
+						this.style.setRule(stringFormat('#%s', this.getID( )), 'height', value) ;
 				},
-				getHeight: function getHeight( )
+				setBorderStyle: function setBorderStyle(properties)
 				{
-						this.style.getProperty(CSSStyle.HEIGHT) ;
+						this.style.setRules(stringFormat('#%s', this.getID( )), CSSStyleDeclaration.borderFor(properties)) ;
 				},
-				setBackground: function setBackground(value)
+				/**
+				* @contract Sets the background property (or, properties) specifically for this component's root element (not the class of elements induced by the type).
+				*/
+				setBackgroundStyle: function setBackgroundStyle(properties)
 				{
-						this.style.setProperty(CSSStyle.BACKGROUND, value) ;
+						this.style.setRules(stringFormat('#%s', this.getID( )), CSSStyleDeclaration.backgroundFor(properties)) ;
 				},
-				getBackground: function getBackground( )
+				/**
+				* @contract Sets the box shadow property (or, properties) specifically for this component's root element (not the class of elements induced by the type).
+				*/
+				setShadowStyle: function setShadowStyle(properties)
 				{
-						this.style.getProperty(CSSStyle.BACKGROUND) ;
+						this.style.setRules(stringFormat('#%s', this.getID( )), CSSStyleDeclaration.shadowFor(properties)) ;
 				}
 		}
 }

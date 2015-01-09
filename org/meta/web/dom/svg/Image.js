@@ -48,7 +48,7 @@ console.log('Image.drawCircle') ;
 					
 					//
 					
-						circle = Circle.create(DOM.newElement('circle', DOM.ownerOf(this.root), SVG.NAMESPACE_URI)) ;
+						circle = Circle.create(DOM.newElement('circle', DOM.ownerOf(this.target), SVG.NAMESPACE_URI)) ;
 						
 						circle.setLeft(left) ;
 						circle.setTop(top) ;
@@ -70,7 +70,7 @@ console.log('Image.drawPath') ;
 					
 					//
 					
-						path = Path.create(DOM.newElement('path', DOM.ownerOf(this.root), SVG.NAMESPACE_URI)) ;
+						path = Path.create(DOM.newElement('path', DOM.ownerOf(this.target), SVG.NAMESPACE_URI)) ;
 						path.setAttribute('d', polyline) ;
 
 						path.attach(this) ;

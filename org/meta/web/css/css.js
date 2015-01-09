@@ -8,6 +8,10 @@
 {
 		global:
 		{
+				PROPERTY_MARGIN: 'margin',
+				PROPERY_WIDTH: 'width',
+				PROPERTY_HEIGHT: 'height',
+				PROPERTY_BACKGROUND: 'background',
 				MIME_CSS: 'text/css',
 				MEDIA_SCREEN: 'screen',
 				/**
@@ -50,7 +54,7 @@
 						
 					//
 					
-						if(IE_VERSION === -1.0) return function ruleAt(sheet, index) { return sheet.cssRules.item(i1) ; }
+						if(! IS_IE) return function ruleAt(sheet, index) { return sheet.cssRules.item(index) ; }
 						else
 error('Unsupported Operation') ;
 				})( ),
@@ -59,7 +63,7 @@ error('Unsupported Operation') ;
 				* @link http://msdn.microsoft.com/en-us/library/ie/ms535871
 				*/
 				insertRule: (function( ) {
-						if(IE_VERSION >= 9.0 || IE_VERSION === -1.0) return function insertRule(sheet, rule, index) { return sheet.insertRule(rule, index) ; }
+						if(IE_VERSION >= 9.0 || ! IS_IE) return function insertRule(sheet, rule, index) { return sheet.insertRule(rule, index) ; }
 						else error('Not implemented') ;
 				})( ),
 				/**
@@ -68,7 +72,7 @@ error('Unsupported Operation') ;
 				* @todo rework: polyfill requires selector and rule block split for
 				*/
 				addRule: (function( ) {
-						if(IE_VERSION >= 9.0 || IE_VERSION === -1.0) return function addRule(sheet, rule)
+						if(IE_VERSION >= 9.0 || ! IS_IE) return function addRule(sheet, rule)
 						{
 
 							// variables
@@ -85,23 +89,6 @@ error('Unsupported Operation') ;
 							
 						}
 						else error('Not implemented') ;
-						/*
-						else return function addRule(sheet, rule)
-						{
-						
-							// variables
-							
-							var i ;
-							
-							//
-
-								sheet.addRule((i = CSS.lengthOf(sheet)), rule) ;
-								
-							// return
-
-							return i ;
-							
-						}*/
 				})( ),
 				/**
 				* @link https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleSheet.deleteRule
@@ -110,9 +97,60 @@ error('Unsupported Operation') ;
 					
 					//
 					
-						if(IE_VERSION >= 9.0 || IE_VERSION === -1) return function removeRule(sheet, index) { sheet.deleteRule(index) ; } ;
+						if(IE_VERSION >= 9.0 || ! IS_IE) return function removeRule(sheet, index) { sheet.deleteRule(index) ; } ;
 						else return function removeRule(sheet, index) { sheet.removeRule(index) ; } ;
 
+				})( ),
+				/**
+				* @param (CSStyleDeclaration) style A CSSStyleDeclaration instance.
+				* @todo polyfill
+				* @deprecated refactored into CSSStyleDeclaration
+				*/
+				_setBackground: (function( ) {
+						if(IE_VERSION >= 9.0 || ! IS_IE) return function addBackground(style, selector,  properties)
+						{
+						
+								if(isObject(properties)) style.addRules(selector, {
+										'background-attachment': properties.attachment || 'scroll',
+										'background-position': properties.position || 'top left',
+										'background-repeat': properties.repeat || 'no-repeat',
+										'background-size': properties.size || 'contain',
+										'background-image': properties.image || 'transparent'
+								}) ;
+								else if(isString(properties)) style.setRule(selector, {'background': properties}) ;
+								else throw new TypeError('Invalid Argument: Argument for formal parameter "properties" must be string or object.') ;
+						}
+						else
+error('Not implemented') ;
+				})( ),
+				/**
+				* @param (CSStyleDeclaration) style A `CSSStyleDeclaration` instance.
+				* @todo polyfill
+				* @deprecated refactored into CSSStyleDeclaration
+				*/
+				_setShadow: (function( ) {
+						if(IE_VERSION >= 9.0 || ! IS_IE) return function addShadow(style, properties)
+						{
+						
+							// variables
+							
+							var property ;
+							
+							//
+							
+								if(isObject(properties)) property = (properties.inset ? 'inset ' : '') + properties.offset + ' ' + properties.blur + ' ' + properties.color ;
+								else if(isString(properties)) property = properties ;
+								else throw new TypeError('Invalid Argument: Argument for formal parameter "properties" must be string or object.') ;
+							
+								style.addRules(selector, {
+										'-moz-box-shadow': property,
+										'-webkit-box-shadow': property,
+										'box-shadow': property
+								}) ;
+
+						}
+						else
+error('Not implemented') ;
 				})( )
 		}
 }

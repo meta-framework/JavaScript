@@ -23,7 +23,7 @@
 				
 					// return
 					
-					return new this(new RegExp(pattern, 'g')) ;
+					return new this(new RegExp(pattern, 'g')) ; // flag global search to be able to implement `lookingAt`
 
 				}
 		},

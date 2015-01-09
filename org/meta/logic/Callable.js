@@ -3,6 +3,7 @@
 @type abstract
 @extend org.meta.logic.Setable
 @description Abstract type specifying the attributes and operations of a callable object.
+@deprecated
 */
 {
 		global:

@@ -1,7 +1,9 @@
 /*
 @identifier org.meta.util.Interval
-@extend org.meta.logic.Runnable
+@extend org.meta.Object
 @description An object wrapper for the `window.setInterval`, `window.clearInterval` operations.
+@todo needs rework
+@deprecated
 */
 {
 		main: function main(callback, duration)

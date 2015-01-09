@@ -7,25 +7,39 @@
 		{
 				create: function create( ) { return new this(null) ; },
 				/**
-				* Reflectively call a function within this object's prototype using the given context object (or `null`) and passing the given parameter list (or null).
-				* @param parameter (Object, Array) The parameter list for the reflective call to the function for the given name. If an array was passed, the function is called using `Function.prototype.apply`; `Function.prototype.call` otherwise. If you want to pass an array as the single parameter you need to wrap it in another array (e.g. `<constructor>.invoke(<name>, <context>, [a])` if `a` refers to an array type).
-				* @return (?) The return value of the reflectively called function.
+				* Reflectively call a function within this object's prototype using the given context object (or `null`) and passing the given parameter list.
+				* @param (<?>) parameter... The parameter list for the reflective call to the function for the given name. If an array was passed, the function is called using `Function.prototype.apply`; `Function.prototype.call` otherwise. If you want to pass an array as the single parameter you need to wrap it in another array (e.g. `<constructor>.invoke(<name>, <context>, [a])` if `a` refers to an array type).
+				* @return (<?>) The return value of the reflectively called function.
 				*/
 /*@todo: for a null context value, invoke the constructor function (if applicable).*/
-				invoke: function invoke(name, context, parameter)
+				invoke: function invoke(name, context, parameter/*...*/)
 				{
+				
+					// preconditions
+					
+						assert(isSet(name, this.prototype), 'Invalid Argument: Operation is undefined (name=%s)', name) ;
 
 					// variables
 					
-					var f ;
+					var context = context || null,
+						length ;
 					
 					//
 
-						if(! isSet(name, this.prototype)) throw new ReferenceError('Function is undefined (name="' + name + '")')
-						else f = this.prototype[name] ;
-
-						if(isArray(parameter)) return f.apply(context, parameter) ;
-						else return f.call(context, parameter) ;
+						switch((length = arguments.length))
+						{
+								case 2:
+										return this.prototype[name]
+										.call(context) ;
+								break ;
+								case 3:
+										return this.prototype[name]
+										.call(context, arguments[2]) ;
+								break ;
+								default:
+										return this.prototype[name]
+										.apply(context, arrayCopy(arguments, 2, length)) ;
+						}
 				
 				},
 				getName: function getName( ) { return this.reflect.name ; },

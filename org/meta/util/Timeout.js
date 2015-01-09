@@ -1,8 +1,9 @@
 /*
 @identifier org.meta.util.Timeout
-@extend org.meta.logic.Runnable
+@extend org.meta.Object
 @description An object wrapper for the `window.setTimeout`, `window.clearTimeout` operations.
-@implementation Note that the inheritation of the destructor of the super type `Runnable`---by not defining a destructor here---implies a call to `stop` which in turn will clear the timeout.
+@todo needs rework
+@deprecated
 */
 {
 		main: function main(callback, duration)

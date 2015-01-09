@@ -1,33 +1,49 @@
 /*
-@identifier org.meta.logic.Runnable
+@identifier org.meta.logic.event.Runnable
 @type abstract
-@extend org.meta.logic.Setable
+@extend org.meta.logic.event.EventTarget
 @description An abstract object implementation a simple state machine model.
 */
 {
+		main: function main(argv)
+		{
+				this.listeners = { } ;
+				this.state = Runnable.STATE_STOPPED ; // initialize with a stopped state
+		},
 		global:
 		{
 				STATE_STOPPED: 0,
 				STATE_ACTIVE: 1,
 				STATE_PAUSED: 2,
-				STATE_DONE: 3
+				STATE_DONE: 3,
+				EVENT_STATE_CHANGE: 'state-change'
 		},
 		local:
 		{
-				state: 0,
+				state: null,
 				destroy: function( )
 				{
 				
 					//
-				
-						assert(this.isDone( ), 'Illegal State: Runnable must be done before it may be destroyed.') ;
 					
-						this.setState(Runnable.STATE_DONE) ;
+						if(! this.isDone( )) { this.stop( ) ; this.finish( ) ; }
 					
-						org.meta.logic.Runnable.super.invoke('destroy', this) ;
+						org.meta.logic.event.Runnable.super.invoke('destroy', this) ;
 						
 				},
-				setState: function setState(state) { this.state = state ; },
+				setState: function setState(state)
+				{
+				
+					// variables
+					
+					var old = this.state ;
+					
+					//
+					
+						this.state = state ;
+						this.triggerEvent(Runnable.EVENT_STATE_CHANGE, {old_state: old, new_state: state}) ;
+
+				},
 				getState: function getState( ) { return this.state ; },
 				isStopped: function isStopped( ) { return this.getState( ) === Runnable.STATE_STOPPED ; },
 				isActive: function isActive( ) { return this.getState( ) === Runnable.STATE_ACTIVE ; },
@@ -38,7 +54,7 @@
 					
 					// preconditions
 					
-						assert(this.isStopped( ) || this.isPaused( ), 'Illegal State: Object must be stopped or paused.') ;
+						assert(this.isActive( ) || this.isPaused( ) || this.isStopped( ), 'Illegal State: Object must be active, stopped or paused.') ;
 						
 					//
 					
@@ -50,7 +66,7 @@
 				
 					// preconditions
 					
-						assert(this.isActive( ) || this.isPaused( ), 'Illegal State: Object must be active or paused.') ;
+						assert(this.isActive( ) || this.isPaused( ) || this.isStopped( ), 'Illegal State: Object must be active, stopped or paused.') ;
 						
 					//
 					
@@ -66,7 +82,7 @@
 				
 					// preconditions
 					
-						assert(this.isStopped( ), 'Illegal State: Object must be stopped') ;
+						assert(this.isPaused( ) || this.isStopped( ), 'Illegal State: Object must be stopped') ;
 					
 					// variables
 					
@@ -77,37 +93,31 @@
 					//
 					
 						/*Pause this runnable.*/
-						this.setState(RUnnable.STATE_PAUSED) ;
+						this.setState(Runnable.STATE_PAUSED) ;
 					
 						/*If either the timeout duration has been exhausted or the runnable was externally unpaused, let the enqueued job finish and set this runnable's state to active (if paused).*/
 						then = Date.now( ) ;
 						enqueue(
 								function( ) { if(runnable.isPaused( )) runnable.start( ) ; },
-								{activate: function( ) { return (Date.now( ) - then >= duration) || ! runnable.isPaused( ) ; }}
+								{activate: function( ) { return Date.now( ) - then >= duration) && runnable.isPaused( ) ? 0 : -1 ; }} // loop the activated state while the duration has not passed and the runnable instance is still paused
 						) ;
-/*
-						this.setState(Runnable.STATE_PAUSED) ;
-					
-						then = Date.now( ) ;
-						job = jobCreate( ) ;
-						/*Watch for one of two conditions: (1) the timeout has been depleted and the runnable is paused, (2) this runnable instance has been unpaused.*
-						job.watch(function( ) {
-								if((Date.now( ) - then >= duration) && runnable.isPaused( )) { runnable.start( ) ; return true ; }
-								else if(runnable.getState( ) !== Runnable.STATE_PAUSED) return true ;
-						}) ;
-*/
+
 				},
 				finish: function finish( )
 				{
 				
 					// preconditions
 					
-						assert(this.getState( ) === Runnable.STATE_STOPPED, 'Illegel State: Object must be stopped.') ;
+						assert(this.isStopped( ) || this.isDone( ), 'Illegel State: Object must be stopped or done.') ;
 					
 					//
 					
 						this.setState(Runnable.STATE_DONE) ;
 
+				},
+				onStateChange: function onStateChange(listener)
+				{
+						Runnable.super.invoke('addListener', Runnable.EVENT_STATE_CHANGE, listener) ;
 				}
 		}
 }

@@ -1,7 +1,7 @@
 /*
 @identifier org.meta.web.dom.html.Link
 @extend org.meta.web.dom.html.Component
-@require org.meta.web.dom.event.Events, org.meta.web.dom.html.HTML
+@require org.meta.web.css.CSSStyleDeclaration, org.meta.web.dom.event.Events, org.meta.web.dom.event.EventListener, org.meta.web.dom.html.HTML
 @description A component wrapper for an html anchor element.
 */
 {
@@ -9,7 +9,24 @@
 		{
 				create: function create(document, layout)
 				{
-						return Component.create.apply(this, [HTML.createElement(document, 'a'), layout]) ;
+				
+					// variables
+					
+					var link,
+						element ;
+					
+					//
+					
+						element = HTML.createElement(document, 'a') ;
+
+						link = new this(element, new CSSStyleDeclaration(element), layout)
+						link.setAttribute('id', Component.createComponentID(link)) ;
+						link.setAttribute('class', Component.createComponentClass(link)) ;
+
+					// return
+
+						return link ;
+
 				}
 		},
 		local:
@@ -17,9 +34,11 @@
 				draw: function draw(sheet)
 				{
 
-						this.style.setProperty('-moz-user-select', 'none') ;
-						this.style.setProperty('display', 'inline') ;
-						this.style.setProperty('position', 'relative') ;
+						this.style.addRules(Component.createComponentClassSelector(this), {
+								'-moz-user-select': 'none',
+								'display': 'inline',
+								'position': 'relative'
+						}) ;
 					
 						org.meta.web.dom.html.Link.super.invoke('draw', this, sheet) ;
 
@@ -31,8 +50,11 @@
 				},
 				setLink: function setLink(url)
 				{
-						HTML.setAttribute(this.root, 'href', url) ;
-						Events.addListener(this.root, 'click', function(data) { console.log('click: %s', url) ; }) ;
+						HTML.setAttribute(this.target, 'href', url) ;
+				},
+				onClick: function onClick(callback)
+				{
+						this.addListener(Events.EVENT_CLICK, EventListener.create(callback, EventListener.PREVENT_DEFAULT)) ;
 				}
 		}
 }

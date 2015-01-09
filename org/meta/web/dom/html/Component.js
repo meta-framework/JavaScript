@@ -2,44 +2,30 @@
 @abstract
 @identifier org.meta.web.dom.html.Component
 @extend org.meta.web.dom.Component
-@require org.meta.web.css.CSSStyle, org.meta.web.dom.html.HTML
+@require org.meta.util.StringBuilder, org.meta.web.dom.html.HTML
 */
 {
 		main: function main(root, style, layout)
 		{
 
-				this.root = root ;
+				this.target = root ;
 				this.style = style ;
 				this.layout = layout ;
 
-				this.children = [ ] ;
+//				this.children = [ ] ;
 
 		},
 		global:
 		{
 				/**
 				* @param (String) type The element type for this component's root node.
+				* @abstract
 				*/
-				create: function create(root, layout)
-				{
-				
-					// variables
-					
-					var component ;
-					
-					//
-
-						component = new this(root, new CSSStyle(null), layout) ;
-						component.setID(Component.createComponentID(component)) ;
-						component.setClass(Component.createComponentClass(component)) ;
-
-					// return
-					
-						return component ;
-					
-				},
-				createComponentID: function createComponentID(component) { return component.constructor.getName( ) + '-' + createID( ) ; },
-				createComponentClass: function createComponentClass(component) { return component.constructor.getType( ).replace(/\./g, '-') ; }
+				create: function create(document, layout) { },
+				createComponentID: function createComponentID(component) { return component.constructor.getType( ).replace(/\./g, '-') + '_' + createID( ) ; },
+				createComponentIDSelector: function createComponentIDSelector(component) { return '#' + component.getID( ) ; }, // use the "id" attribute rather than calling Component::createComponentID since the resultant string of this operation is unique (and will not match a given "id" attribute)
+				createComponentClass: function createComponentClass(component) { return component.constructor.getType( ).replace(/\./g, '-') ; },
+				createComponentClassSelector: function createComponentClassSelector(component) { return '.' + Component.createComponentClass(component) ; } // do not use the "class" attribute since there may be volatile class names in addition to the class identifier for the component
 		},
 		local:
 		{
@@ -59,25 +45,30 @@
 				* @contract This operation sets the default style for a component of this type using a class name shared by instances of this component type.
 				*
 				* @param (CSSStyleSheet) sheet The style sheet to post this component's style rules to.
+				* @todo removed style rules need to be removed from the style sheet as well.
 				*/
 				draw: function draw(sheet)
 				{
-
-					// variables
-					
-					var selector ;
-					
+// console.log('%s#draw', this.constructor.getType( )) ;
 					//
-
-						selector = '.' + Component.createComponentClass(this) ;
-					
-						if(! sheet.hasStyleRule(selector)) sheet.addStyleRule(selector, this.style.toRuleString( )) ;
-
+/*@qnd*/
+objectEach(this.style.rules, function(rule, selector) {
+		if(! sheet.hasStyleRule(selector))
+		{
+			var builder = new StringBuilder('') ;
+				objectEach(rule, function(v, k) {
+						builder.append('%s:', k)
+						.append(v)
+						.append(';') ;
+				}) ;
+				sheet.addStyleRule(selector, builder.build( )) ;
+		}
+}) ;
 				},
 				/**
 				* Update this component's style.
 				*
-				* @contract This operation is ought to contain the logic for additional---potentially impermanent---style properties.
+				* @contract This operation is ought to contain the logic for additional---potentially impermanent---style properties. Existing style data are not to be cleared when this operation is called.
 				*
 				* @param (CSSStyleSheet) sheet The style sheet to post this component's updated style rules to.
 				*/
@@ -85,17 +76,17 @@
 				{
 					//..
 				},
-				setAttribute: function setAttribute(name, value) { HTML.setAttribute(this.root, name, value) ; },
-				getAttribute: function getAttribute(name, value) { return HTML.getAttribute(this.root, name) ; },
-				removeAttribute: function removeAttribute(name) { return HTML.removeAttribute(this.root, name) ; },
-				hasAttribute: function hasAttribute(name) { return HTML.hasAttribute(this.root, name) ; },
-				setID: function setID(id) { HTML.setAttribute(this.root, 'id', id) ; },
-				getID: function getID( ) { return HTML.getAttribute(this.root, 'id') ; },
-				hasClass: function hasClass(name) { return HTML.hasClass(this.root, name) ; },
-				setClass: function setClass(name) { HTML.setClass(this.root, name) ; },
-				getClass: function getClass( ) { return	HTML.getClass(this.root) ; },
-				addClass: function addClass(name) { HTML.addClass(this.root, name) ; },
-				removeClass: function removeClass(name) { HTML.removeClass(this.root, name) ; },
-				toggleClass: function toggleClass(name) { HTML.toggleClass(this.root, name) ; }
+				setAttribute: function setAttribute(name, value) { HTML.setAttribute(this.target, name, value) ; },
+				getAttribute: function getAttribute(name, value) { return HTML.getAttribute(this.target, name) ; },
+				removeAttribute: function removeAttribute(name) { return HTML.removeAttribute(this.target, name) ; },
+				hasAttribute: function hasAttribute(name) { return HTML.hasAttribute(this.target, name) ; },
+				setID: function setID(id) { HTML.setAttribute(this.target, 'id', id) ; },
+				getID: function getID( ) { return HTML.getAttribute(this.target, 'id') ; },
+				hasClass: function hasClass(name) { return HTML.hasClass(this.target, name) ; },
+				setClass: function setClass(name) { HTML.setClass(this.target, name) ; },
+				getClass: function getClass( ) { return	HTML.getClass(this.target) ; },
+				addClass: function addClass(name) { HTML.addClass(this.target, name) ; },
+				removeClass: function removeClass(name) { HTML.removeClass(this.target, name) ; },
+				toggleClass: function toggleClass(name) { HTML.toggleClass(this.target, name) ; }
 		}
 }

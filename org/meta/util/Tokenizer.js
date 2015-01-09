@@ -12,7 +12,7 @@
 		{
 				tokenize: function tokenize(token, callback)
 				{
-console.log('Tokenizer.tokenize(%s)', token) ;
+
 					// variables
 					
 					var index = 0, last = 0, skip = token.length, counter = -1, stop ;

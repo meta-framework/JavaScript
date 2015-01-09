@@ -21,8 +21,8 @@
 					
 						menu = Menu.super.create.apply(this, [document, layout]) ;
 
-						HTML.append((list = HTML.createElement(document, 'ul')), menu.root) ;
-						HTML.setAttribute(list, 'class', '-list') ;
+						HTML.append((list = HTML.createElement(document, 'ul')), menu.target) ;
+						HTML.setAttribute(list, 'class', 'list') ;
 					
 					// return
 					
@@ -37,30 +37,13 @@
 				
 					// preconditions
 					
-						assert(isInstanceOf(MenuItem, item), 'Invalid Argument: Argument for formal parameter "item" must be `MenuItem`.') ; // only allow instances of `MenuItem`
+						assert(isInstanceOf(MenuItem, item), 'Invalid Argument: Argument for formal parameter "item" must be MenuItem.') ; // only allow instances of `MenuItem`
 						
 					//
 					
 						Component.invoke('add', this, item) ;
 						
-						if(! item.hasClass('-list-item')) item.addClass('-list-item') ; // add a class name identifying the list items for easy selection
-
-				},
-				attach: function attach(item)
-				{
-				
-					// preconditions
-					
-						assert(isInstanceOf(MenuItem, item), 'Invalid Argument: Argument for formal parameter "item" must be `MenuItem`.') ;
-						
-					// variables
-					
-					var list ;
-					
-					//
-
-						if((list = HTML.findFirst(this.root, stringFormat('#%s > ul.-list', this.getID( ))))) HTML.append(item.root, list) ;
-						else error('Illegal State: Unable to find list container.') ;
+						if(! item.hasClass('list-item')) item.addClass('list-item') ; // add a class name to the list item element for easy selection
 
 				},
 				remove: function add(item)
@@ -68,19 +51,19 @@
 				
 					// preconditions
 					
-						assert(isInstanceOf(MenuItem, item), 'Invalid Argument: Argument for formal parameter "item" must be `MenuItem`.') ; // only allow instances of `MenuItem`
+						assert(isInstanceOf(MenuItem, item), 'Invalid Argument: Argument for formal parameter "item" must be enuItem.') ; // only allow instances of `MenuItem`
 						
 					//
 					
 						Component.invoke('remove', this, item) ;
 
 				},
-				detach: function detach(item)
+				attach: function attach(item)
 				{
 				
 					// preconditions
 					
-						assert(isInstanceOf(MenuItem, item), 'Invalid Argument: Argument for formal parameter "item" must be `MenuItem`.') ;
+						assert(isInstanceOf(MenuItem, item), 'Invalid Argument: Argument for formal parameter "item" must be MenuItem.') ;
 						
 					// variables
 					
@@ -88,7 +71,24 @@
 					
 					//
 
-						if((list = HTML.findFirst(this.root, stringFormat('#%s > ul.-list', this.getID( ))))) HTML.remove(item.root, list) ;
+						if((list = HTML.findFirst(this.target, stringFormat('#%s .list', this.getID( ))))) HTML.append(item.target, list) ;
+						else error('Illegal State: Unable to find list container.') ;
+
+				},
+				detach: function detach(item)
+				{
+				
+					// preconditions
+					
+						assert(isInstanceOf(MenuItem, item), 'Invalid Argument: Argument for formal parameter "item" must be MenuItem.') ;
+						
+					// variables
+					
+					var list ;
+					
+					//
+
+						if((list = HTML.findFirst(this.target, stringFormat('#%s .list', this.getID( ))))) HTML.remove(item.target, list) ;
 						else error('Illegal State: Unable to find list container.') ;
 
 				},
@@ -97,7 +97,7 @@
 				
 					//
 					
-this.style.setProperty('list-style-type', 'none') ;
+						this.style.addRules(Component.createComponentClassSelector(this), {'list-style-type': 'none'}) ;
 						org.meta.web.dom.html.Menu.super.invoke('draw', this, sheet) ;
 				
 				},

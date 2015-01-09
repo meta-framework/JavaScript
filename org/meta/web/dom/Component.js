@@ -2,17 +2,17 @@
 @identifier org.meta.web.dom.Component
 @abstract
 @extend org.meta.web.dom.event.EventTarget
-@require org.meta.web.dom.DOM
+@require org.meta.web.dom.DOM, org.meta.web.dom.event.EventListener
 @description An object wrapper for a (partial) DOM element tree.
 */
 {
-		main: function main(root/*, style*/, layout)
+		main: function main(root, layout)
 		{
-				this.root = root ;
-//				this.style = style ;
-				this.layout = layout ;
+
+				this.target = root ;
+				this.layout = layout || 0 ;
 			
-				this.children = [ ] ;
+//				this.children = [ ] ;
 
 		},
 		global: {
@@ -40,7 +40,10 @@
 				*/
 				children: null,
 				/**
-				* @todo the queue child component destruction has to be tested
+				* @type Stack<Job>
+				*/
+				jobs: null,
+				/**
 				*/
 				destroy: function destroy( )
 				{
@@ -55,10 +58,26 @@
 
 						/*Remove this component's root node from the DOM tree.*/
 						if((parent_component = this.parent)) parent_component.remove(this) ; // removal from the parent node's DOM tree is implicit in this operation.
-						else if((parent_node = this.root.parent)) DOM.remove(this.root, parent_node) ;
+						else if((parent_node = this.target.parentNode)) DOM.remove(this.target, parent_node) ;
 
 						org.meta.web.dom.Component.super.invoke('destroy', this) ;
 
+				},
+				/**
+				* @param (String) type The event type to register the given listener for.
+				* @param (EventListener) listener An event listener instance.
+				*/
+				addListener: function addListener(type, listener)
+				{
+					
+					//
+					
+						assert(! listener.hasAttribute(EventListener.PROPAGATE_EVENT), 'Invalid Argument: Listener may not propagate event.') ;
+
+					//
+
+						Component.super.invoke('addListener', this, type, listener)
+				
 				},
 				/**
 				* Add another component as a child component.
@@ -70,11 +89,16 @@
 					
 						assert(isInstanceOf(Component, child), 'Invalid Argument: Type for formal parameter "component" must be `org.meta.web.dom.html.Component`.') ;
 					
+					// variables
+					
+					var a ;
+					
 					//
 					
-						assert(this.children.indexOf(child) === -1, 'Illegal State: Child component has already been added to this component (child-component: %s)', child.id) ;
+						if(! (a = this.children)) a = this.children = [ ] ;
+						else assert(this.children.indexOf(child) === -1, 'Illegal State: Child component has already been added to this component (child-component: %s)', child.id) ;
 					
-						this.children[this.children.length] = child ;
+						a[a.length] = child ;
 						this.attach(child) ;
 /*@qnd*/
 child.parent = this ;
@@ -92,18 +116,22 @@ child.parent = this ;
 					
 					// variables
 					
-					var i ;
+					var a = this.children,
+						i ;
 					
 					//
 					
-						i = this.children.indexOf(child) ;
+						assert(a !== null, 'Null Pointer: Child component collection is null.') ;
 					
-						assert(i !== -1, 'Illegal State: Child component was not added to this component (child-component: %s)', child.id) ;
+						i = a.indexOf(child) ;
 					
-						arrayRemove(this.children, i) ;
+						assert(i !== -1, 'Illegal State: Given child component is not a child component of this component.') ;
+					
+						arrayRemove(a, i) ;
 					
 						this.detach(child) ;
-// assert(! child.root.parentNode, 'Illegal State: Component root node was not removed from parent node.') ;
+					
+						if(i === 0) this.children = null ;
 /*@qnd*/
 child.parent = null ;
 					
@@ -116,11 +144,11 @@ child.parent = null ;
 				
 					//
 					
-						assert(! child.root.parentNode, 'Illegal State: Root node of child component may not be attached.') ;
+						assert(! child.target.parentNode, 'Illegal State: Root node of child component may not be attached.') ;
 				
 					//
 					
-						DOM.append(child.root, this.root) ;
+						DOM.append(child.target, this.target) ;
 // assert(DOM.isSame(child.root.parentNode, this.root), 'invalid attachment') ;
 				},
 				/**
@@ -131,32 +159,77 @@ child.parent = null ;
 // console.log('org.meta.web.dom.Component#detach') ;
 					// preconditions
 // try {
-						assert(child.root.parentNode && DOM.isSame(child.root.parentNode, this.root), 'Illegal State: Root node of child component is not attached to this component\'s root node.') ;
+						assert(child.target.parentNode && DOM.isSame(child.target.parentNode, this.target), 'Illegal State: Root node of child component is not attached to this component\'s root node.') ;
 					
 					//
 					
-						DOM.remove(child.root, this.root) ;
+						DOM.remove(child.target, this.target) ;
 // }catch(e) { console.log('!') ; console.log('child-root:') ; console.log(child.root) ; console.log('child-root-parent:') ; console.log(child.root.parent) ; console.log('this-root:') ; console.log(this.root) ; }
 				},
 				/**
-				* @abstract
-				*/
-				draw: function draw( ) { }, // abstract
-				/**
-				* @abstract
-				*/
-				redraw: function redraw( ) { }, // abstract
-				/**
 				* Set an attribute of this component's root element.
 				*/
-				setAttribute: function setAttribute(name, value, namespace) { DOM.setAttribute(this.root, name, value, namespace) ; },
+				setAttribute: function setAttribute(name, value, namespace) { DOM.setAttribute(this.target, name, value, namespace) ; },
 				/**
 				* Get the value of an attribute of this component's root element.
 				*/
-				getAttribute: function getAttribute(name, namespace) { return DOM.getAttribute(this.root, name) ; },
-				removeAttribute: function removeAttribute(nam) { return DOM.removeAttribute(this.root, name) ; },
-				hasAttribute: function hasAttribute(name, namespace) { return DOM.hasAttribute(this.root, name, namespace) ; },
-				setText: function setText(text) { DOM.setText(this.root, text) ; }
+				getAttribute: function getAttribute(name, namespace) { return DOM.getAttribute(this.target, name) ; },
+				removeAttribute: function removeAttribute(nam) { return DOM.removeAttribute(this.target, name) ; },
+				hasAttribute: function hasAttribute(name, namespace) { return DOM.hasAttribute(this.target, name, namespace) ; },
+				setText: function setText(text) { DOM.setText(this.target, text) ; },
+				getText: function getText(text) { return DOM.getText(this.target, text) ; },
+				hasText: function hasText(text)
+				{
+				
+					// variables
+					
+						var text ;
+					
+					//
+					
+						text = DOM.getText(this.target) ;
+					
+					// return
+					
+						return text && text !== '' ;
+
+				},
+				/**
+				* @todo implement
+				*/
+				setChild: function setChild(index)
+				{
+error('not implemented.') ;
+				},
+				getChild: function getChild(index)
+				{
+				
+					// preconditions
+					
+						assert(this.hasChildren( ) && index >= 0 && index < this.children.length, 'Index Out Of Bounds: Argument for formal parameter "index" exceeds child collection bounds.') ;
+					
+					//
+					
+						return this.children[index] ;
+					
+				},
+				hasChildren: function hasChildren( ) { return this.children && this.children.length > 0 ; },
+				/**
+				* @abstract
+				*/
+				draw: function draw( ) { },
+				/**
+				* @abstract
+				*/
+				redraw: function redraw( ) { },
+				/**
+				* @contract Enable this module.
+				*/
+				activate: function activate( ) { },
+				/**
+				* @contract Disable this module.
+				*/
+				deactivate: function deactivate( ) { }
 		}
 
 }

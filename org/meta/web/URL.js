@@ -42,7 +42,7 @@
 						 
 								url.setHost((s = u.host)) ;
 						 
-								if(! stringEmpty((s = u.port))) url.setPort(parseInt(s)) ;
+								if(! stringEmpty((s = u.port))) url.setPort(parseInt(s, 10)) ;
 								else url.setPort(-1) ;
 						 
 /*

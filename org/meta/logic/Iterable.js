@@ -5,18 +5,10 @@
 @description Abstract object containing standard implementations of an iterable element.
 */
 {
-		main: function main(elements)
-		{
-		
-			//
-			
-				this.elements = elements ;
-
-		},
 		local:
 		{
-				get: function get(index) { return this.elements[index] ; },
-				length: function length( ) { return this.elements.length ; },
+				length: function length( ) { }, // abstract
+				get: function get(index) { }, // abstract
 				iterator: function iterator( ) { }
 		}
 }

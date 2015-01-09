@@ -1,7 +1,8 @@
 /*
 @identifier org.meta.logic.Job
-@extend org.meta.logic.Runnable
+@extend org.meta.logic.event.Runnable
 @description An object wrapper for the queue internals. 
+@deprecated
 */
 {
 		main: function main(id) { this.tasks = {next: VOID} },

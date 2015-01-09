@@ -18,6 +18,7 @@
 		Configuration,
 		GLOBAL_OBJECT,
 		DEFAULT_WINDOW,
+		DEFAULT_DOCUMENT,
 		VOID,
 		NULL,
 		TRUE,
@@ -40,6 +41,7 @@
 		isWindow,
 		isInstanceOf,
 		typeOf,
+		valueOf,
 		constructorOf,
 		assert,
 		error,
@@ -288,6 +290,33 @@
 						enumerable: true
 				}
 		) ;
+ 
+		if(typeof Array.prototype.map === 'undefined') Object.defineProperty(
+				Array.prototype,
+				'map',
+				{
+						value: function map(callback, thisArg)
+						{
+
+							// variables
+							
+							var array ;
+							
+							//
+							
+								array = [ ] ;
+								this.forEach(function(v, i) { array[i] = callback.call(null, v) ; }) ;
+								
+							// return
+							
+							return array ;
+
+						},
+						configurable: true,
+						writable: true,
+						enumerable: true
+				}
+		) ;
 				
 		if(typeof Array.prototype.some === 'undefined') Object.defineProperty(
 				Array.prototype,
@@ -365,7 +394,7 @@
 		*/
 		GLOBAL_OBJECT = Core.GLOBAL_OBJECT = GLOBAL_OBJECT ;
 		Core.DEFAULT_WINDOW = DEFAULT_WINDOW = (function( ) { try { if(typeof GLOBAL_OBJECT.window !== 'undefined') return GLOBAL_OBJECT.window ; } catch(e) { } return null ; })( ) ;
-		Core.DEFAULT_DOCUMENT = (function( ) { try { if(typeof GLOBAL_OBJECT.document !== 'undefined') return GLOBAL_OBJECT.document ; } catch(e) { } return null ; })( ) ;//GLOBAL_OBJECT.document || null ;
+		Core.DEFAULT_DOCUMENT = DEFAULT_DOCUMENT = (function( ) { try { if(typeof GLOBAL_OBJECT.document !== 'undefined') return GLOBAL_OBJECT.document ; } catch(e) { } return null ; })( ) ;//GLOBAL_OBJECT.document || null ;
 		Core.IS_BROWSER = !! Core.DEFAULT_WINDOW && !! Core.DEFAULT_DOCUMENT ;
 
 	//-- UA
@@ -475,6 +504,18 @@
 		Core.TRUE = TRUE = true ; // ensure `NULL` is not alone
 		Core.FALSE = FALSE = false ; // ensure `TRUE` is not alone
  
+	//--- Primitive Type Identifiers
+	// @note primitive (non-structured) type identifiers by convention have lowercase initial letters
+	// @link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Values,_variables,_and_literals#Values
+
+		Core.TYPE_VOID = 'void' ;
+		Core.TYPE_NULL = 'null' ;
+		Core.TYPE_BOOLEAN = 'boolean' ;
+		Core.TYPE_NUMBER = 'number' ;
+		Core.TYPE_INTEGER = 'integer' ;
+		Core.TYPE_FLOAT = 'float' ;
+		Core.TYPE_STRING = 'string' ;
+ 
 	//- Core Object Operations
 	// @todo use the homogenized operations of the core objects.
 
@@ -523,7 +564,7 @@
 		*/
 		Core.isBoolean = isBoolean = function isBoolean(object)
 		{
-			return typeof object === 'boolean' ;
+			return typeof object === Core.TYPE_BOOLEAN ; //'boolean' ;
 		} ;
 		/**
 		* Test whether the given Object is an instance of Number.
@@ -535,7 +576,7 @@
 		*/
 		Core.isNumber = isNumber = function isNumber(object)
 		{
-			return typeof object === 'number' ? isNaN(object) ? false : true : false ;
+			return typeof object === Core.TYPE_NUMBER /*'number'*/ ? isNaN(object) ? false : true : false ;
 		} ;
 		/**
 		* Test whether the given Object is an instance of Number for an integer value.
@@ -577,8 +618,12 @@
 		*/
 		Core.isString = isString = function isString(object)
 		{
-				return typeof object === 'string' ;
+				return typeof object === Core.TYPE_STRING ;//'string' ;
 		} ;
+		/**
+		* @link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Values,_variables,_and_literals#Values
+		*/
+		Core.isPrimitive = function isPrimitive(object) { return typeof object === 'undefined' || object === null || typeof object === 'boolean' || isNumber(object) || isString(object) ; } ;
 		/*
 		* Test whether the given object is an instance of Object.
 		*
@@ -693,15 +738,16 @@
 			//
 
 				/* First things first, exclude `null` and undefined values.*/
-				if(isVoid(object)) return 'Void' ; //CONSTANTS.TYPE_VOID ; }
-				else if(isNull(object)) return 'Null' ;// CONSTANTS.TYPE_NULL ; }
+				if(isVoid(object)) return Core.TYPE_VOID ;//'Void' ; //CONSTANTS.TYPE_VOID ; }
+				else if(isNull(object)) return Core.TYPE_NULL ;//'Null' ;// CONSTANTS.TYPE_NULL ; }
 				else {
 
 						/*Apply all tests first which do not require (or, are not feasible by) parsing the object tag.*/
-						if(isFunction(object) ) return 'Function' ;//return CONSTANTS.TYPE_FUNCTION ; }
-						else if(isBoolean(object)) return 'Boolean' ;// CONSTANTS.TYPE_BOOLEAN ; }
-						else if(isNumber(object)) return isFloat(object) ? 'Float' : 'Integer' ; //CONSTANTS.TYPE_FLOAT : CONSTANTS.TYPE_INTEGER ; }
-						else if(isString(object)) return 'String' ;// CONSTANTS.TYPE_STRING ; }
+						if(isBoolean(object)) return Core.TYPE_BOOLEAN ; //'Boolean' ;// CONSTANTS.TYPE_BOOLEAN ; }
+						else if(isNumber(object)) return Core.TYPE_NUMBER ;
+//						else if(isNumber(object)) return isFloat(object) ? Core.TYPE_FLOAT : Core.TYPE_INTEGER; //'Float' : 'Integer' ; //CONSTANTS.TYPE_FLOAT : CONSTANTS.TYPE_INTEGER ; }
+						else if(isString(object)) return Core.TYPE_STRING ;//return 'String' ;// CONSTANTS.TYPE_STRING ; }
+						else if(isFunction(object) ) return 'Function' ;//return CONSTANTS.TYPE_FUNCTION ; }
 						else if(isArray(object)) return 'Array' ;
 						else if(isDate(object)) return 'Date' ;// CONSTANTS.TYPE_DATE ; }
 						else if(isRegExp(object)) return 'RegExp' // CONSTANTS.TYPE_REGEXP ; }
@@ -733,6 +779,46 @@
 
 			return 'Unknown' ;
 
+		} ;
+ 
+		/**
+		* Get the primitive value of the given string.
+		*/
+		Core.valueOf = valueOf = function valueOf(argument)
+		{
+ 
+			// variables
+ 
+			var value ;
+ 
+			//
+ 
+				if(isVoid(argument) || isNull(argument) || isBoolean(argument) || isNumber(argument)) return argument ; // the argument is a primitive value
+				else if(isString(argument))
+				{
+ 
+						/*Try to parse a float value from the string.*/
+						try { value = parseFloat(argument) ; }
+						catch(e) { }
+						finally {
+
+								if(! isNaN(value)) return (value % 1) === 0 ? Number(value).valueOf( ) : value ;
+								else switch(argument)
+								{
+										case 'true': return true ;
+										case 'false': return false ;
+										default: return argument ;
+								}
+ 
+						}
+
+				}
+ 
+				
+			// return
+			
+				return ; // return undefined for structured types
+ 
 		} ;
  
 		Core.constructorOf = constructorOf = function constructorOf(identifier)
@@ -1134,6 +1220,24 @@
 
 		} ;
  
+		/**
+		* @contract Copy the properties of the second given object to the first given object overriding properties if the third given argument is equivalent to `true`.
+		* @return (Object) The first given object.
+		*/
+		Core.objectMerge = function objectMerge(a, b, override)
+		{
+ 
+			//
+
+				if(override === true) objectEach(b, function(v, k) { a[k] = v ; }) ;
+				else objectEach(b, function(v, k) { if(! isSet(k, a)) a[k] = v ; }) ;
+ 
+			// return
+ 
+				return a ;
+
+		} ;
+ 
 		Core.objectEmpty = objectEmpty = function objectEmpty(object) { return ! objectSome(object, function( ) { return true ; }) ; }
  		
 		/**
@@ -1336,20 +1440,18 @@
 		*
 		* @todo ready state change handler needs to handle more status-state combinations.
 		*/
-		Core.requestCreate = requestCreate = function requestCreate(properties)
-		{
- 
-			// variables
- 
-			var request,
-				s ;
- 
-			//
- 
-				/*Get a request object.*/
- 
-				if(Core.IS_IE)
+		Core.requestCreate = requestCreate = (function( ) {
+				if(Core.IS_IE)  return function requestCreate(properties)
 				{
+		 
+					// variables
+		 
+					var request,
+						s ;
+		 
+					//
+		 
+						/*Get a request object.*/
 				
 						['Msxml2.XMLHTTP.6.0','Msxml2.XMLHTTP.3.0','Microsoft.XMLHTTP'].some(function(version) {
 						
@@ -1358,46 +1460,88 @@
 								
 						}) ;
 
-				}
-				else request = new GLOBAL_OBJECT.XMLHttpRequest( ) ;
-
-				assert(! (isNull(request) || isVoid(request)), 'Illegal State: Unable to create request object.') ;
- 
-				/*Set properties and ready state change handler.*/
- 
-				properties.request = request ;
- 
-				request.onreadystatechange = (function ( )
-				{
-						
-					// variables
-
-					var status = this.request.status,
-						state = this.request.readyState,
-						handler ;
- 
-					//
-
-						if((status - 400 > 0) && (handler = this.error)) handler(this) ;
-						else switch(state)
+						assert(! (isNull(request) || isVoid(request)), 'Illegal State: Unable to create request object.') ;
+		 
+						/*Set properties and ready state change handler.*/
+						properties.request = request ;
+						request.onreadystatechange = (function ( )
 						{
-								case Core.XHR_READY_STATES.DONE:
-										if(status === 200 && (handler = this.done)) handler(this) ;
-										else if((handler = this.error)) handler(this) ;
-								break ;
-								default: /*@todo: state handlers*/;
-						}
+								
+							// variables
 
-				}).bind(properties) ;
+							var status = this.request.status,
+								state = this.request.readyState,
+								handler ;
+		 
+							//
 
-				if((s = properties.mime))
-						if(isSet('overrideMimeType', request)) request.overrideMimeType(s) ;
- 
-			// return
- 
-				return request ;
- 
-		} ;
+								if((status - 400 > 0) && (handler = this.error)) handler(this) ;
+								else switch(state)
+								{
+										case Core.XHR_READY_STATES.DONE:
+												if(status === 200 && (handler = this.done)) handler(this) ;
+												else if((handler = this.error)) handler(this) ;
+										break ;
+										default: /*@todo: state handlers*/;
+								}
+
+						}).bind(properties) ;
+
+						if((s = properties.mime))
+								if(isSet('overrideMimeType', request)) request.overrideMimeType(s) ;
+		 
+					// return
+		 
+						return request ;
+						
+				}
+				else if(DEFAULT_WINDOW.XMLHttpRequest) return function requestCreate(properties)
+				{
+				
+					// variables
+					
+					var request ;
+					
+					//
+					
+						/*Create a request object.*/
+						request = new GLOBAL_OBJECT.XMLHttpRequest( ) ;
+
+						/*Set properties and ready state change handler.*/
+						properties.request = request ;
+		 
+						request.onreadystatechange = (function ( )
+						{
+								
+							// variables
+
+							var status = this.request.status,
+								state = this.request.readyState,
+								handler ;
+		 
+							//
+
+								if((status - 400 > 0) && (handler = this.error)) handler(this) ;
+								else switch(state)
+								{
+										case Core.XHR_READY_STATES.DONE:
+												if(status === 200 && (handler = this.done)) handler(this) ;
+												else if((handler = this.error)) handler(this) ;
+										break ;
+										default: /*@todo: state handlers*/;
+								}
+
+						}).bind(properties) ;
+
+						if((s = properties.mime))
+								if(isSet('overrideMimeType', request)) request.overrideMimeType(s) ;
+		 
+					// return
+		 
+						return request ;
+				}
+				error('XMLHttpRequest not implemented.') ;
+		})( ) ;
 
 		Core.requestSend = requestSend = function requestSend(request, properties)
 		{
@@ -1410,9 +1554,8 @@
 				i ;
 			
 			//
- 
+
 				/*Cache prevention.*/
- 
 				if(properties.cache === false)
 				{
 						if((i = url.indexOf('?')) !== -1) url += ('&' + String(Date.now( ))) ;
@@ -1420,11 +1563,9 @@
 				}
  
 				/*Open request in order to be able to set headers and send it.*/
-
 				request.open(method, url, properties.async) ;
  
 				/*Set request method headers.*/
-			
 				switch(method)
 				{
 						case Core.HTTP_METHODS.GET:
@@ -1437,18 +1578,14 @@
 						default: error('Unsupported Operation: HTTP method currently not supported (method="%s")', method) ;
 				}
 				
-				/*Add headers.*/
-				
+				/*Add other headers.*/
 				if((o = properties.headers)) objectEach(o, function(values, header) {
 						values.forEach(function(value) { request.setRequestHeader(header, value) ; }, this) ;
 				}, this) ;
 
-				/*As per convention.*/
-				
-				if(properties.flag) request.setRequestHeader('X-Requested-With', 'XMLHttpRequest') ;
+				if(properties.flag) request.setRequestHeader('X-Requested-With', 'XMLHttpRequest') ; // flag the request as an XMLHttpRequest request as per convention
  
 				/*Send the request.*/
-			
 				if(properties.binary) request.sendAsBinary(properties.body) ;
 				else request.send(properties.body) ;
 		
@@ -1492,7 +1629,6 @@
 		* @contract Defines a type constructor sans library management (i.e. based on the existing library only).
 		* @todo implement using object definition operations `Object.defineProperty`
 		* @return (Function) The constructor of the defined type.
-		* @deprecated: can be easily replaced by `Object.create(new extend( ), { ... })`
 		*/
 		Core.define = function define(identifier, properties)
 		{
@@ -1559,21 +1695,27 @@
 		*/
 		Core.require = require = function require(identifier, callback)
 		{
+// console.log('Core::require (%s)', identifier) ;
+			// variables
+ 
+			var constructor ;
  
 			//
-
-				Library.requireType(identifier) ;
-				Library.listen(Library.STATE_REQUIREMENT_RESOLVED, function(data) {
-/*@quickanddirty*/
-if(objectEvery(Library.STATE, function(state) { return state === Library.STATE_REQUIREMENT_RESOLVED ; }))
-{
-
-	Library.unlisten(Library.STATE_REQUIREMENT_RESOLVED) ;
-	callback.call(null, constructorOf(identifier)) ;
-	
-}
-				}) ;
  
+				if((constructor = constructorOf(identifier))) callback.call(constructor) ;
+				else
+				{
+ 
+/*@qnd*/
+Library.requireType(identifier) ;
+Library.listen(Library.STATE_REQUIREMENT_RESOLVED, function(event) {
+	if(objectEvery(Library.STATE, function(state) { return state === Library.STATE_REQUIREMENT_RESOLVED ; }))
+	{
+		Library.unlisten(Library.STATE_REQUIREMENT_RESOLVED) ;
+		callback.call(null, constructorOf(identifier)) ;
+	}
+}) ;
+				}
 		} ;
  
 		/**
@@ -1581,6 +1723,9 @@ if(objectEvery(Library.STATE, function(state) { return state === Library.STATE_R
 		*/
 		Core.constructorOf = function constructorOf(identifier) { return Library.CONSTRUCTORS[identifier] || null ; } ;
  
+		/**
+		* Get the package for the given namespace identifier.
+		*/
 		Core.packageOf = function packageOf(namespace) { return objectResolveNamespace(namespace, Library.PACKAGES) ; } ;
  
 		/**
@@ -1642,11 +1787,11 @@ if(objectEvery(Library.STATE, function(state) { return state === Library.STATE_R
 						Job.prototype = Object.create(null, {
 								constructor: {value: Job, configurable: true, writable: true, enumerable: true},
 								/**@return An integer value in {-1, 0, 1, ∞} (-1 indicates the previous state, 0 indicates the current state, 1 the next state, ∞ indicates the next logical default state).*/
-								trigger: {value: function trigger(event)
+								trigger: {value: function trigger(type)
 								{
 									var current,
 										handler ;
-										if((current = this.current) && (handler = this.current[event])) return handler.call(null) ;
+										if((current = this.current) && (handler = this.current[type])) return handler.call(null) ;
 										return Infinity ;
 								}, configurable: true, writable: true, enumerable: true},
 						}) ;
@@ -1820,6 +1965,7 @@ assert(isSet(job.getID( ), jobs), '!') ;
 				else Queue.TOP = ringAdd(null, {job: job}) ;
 // console.dir(Queue.JOBS) ;
 				/*The queue now has at least one element. Reinstate the queue's watch dog timer if it was not set.*/
+// console.log(Queue.TIMER) ;
 				if(! isSet('TIMER', Queue)) Queue.TIMER = GLOBAL_OBJECT.setInterval(
 						function( ) {
 
@@ -1833,7 +1979,7 @@ assert(isSet(job.getID( ), jobs), '!') ;
 								}
 								
 						},
-						Configuration.get(Configuration.QUEUE_TIMER_INTERVAL)
+						Configuration.get(Configuration.TIMER_INTERVAL)
 				) ;
 // console.log('timer-active: %s', !!Queue.TIMER) ;
 // console.log('\t> job-map:') ;
@@ -2102,7 +2248,7 @@ assert(Queue.TOP.job.getID( ) === job.getID( ), 'Illegal State: Job to continue 
 				
 		} ;
 
-		Library.listen = function listen(event, callback)
+		Library.listen = function listen(type, callback)
 		{
 		
 			// variables
@@ -2112,7 +2258,7 @@ assert(Queue.TOP.job.getID( ) === job.getID( ), 'Illegal State: Job to continue 
 			
 			//
  
-				if(! (a = handlers[event])) a = handlers[event] = [ ];
+				if(! (a = handlers[type])) a = handlers[type] = [ ];
  
 				a[a.length] = callback ;
 /*
@@ -2131,7 +2277,7 @@ assert(Queue.TOP.job.getID( ) === job.getID( ), 'Illegal State: Job to continue 
  
 		Library.unlisten = function unlisten(event) { delete Library.HANDLERS[event] ; } ;
 
-		Library.trigger = function trigger(event, data)
+		Library.trigger = function trigger(type, event)
 		{
 		
 			// variables
@@ -2142,10 +2288,10 @@ assert(Queue.TOP.job.getID( ) === job.getID( ), 'Illegal State: Job to continue 
 			//
 			
 //				if(! (o = handlers[identifier])) return ;
-				if(! (a = handlers[event])) return ;
+				if(! (a = handlers[type])) return ;
 // console.log('Library::trigger (%s, %s)', identifier, event) ;
 // console.log('handlers:') ; console.dir(a) ;
-				a.forEach(function(handler) { handler.call(null, data) ; }) ;
+				a.forEach(function(handler) { handler.call(null, event) ; }) ;
 				
 //				delete o[event] ; // library events are only executed once
 				
@@ -2549,10 +2695,10 @@ error('error ("%s") :c', identifier) ;
 								}
 						}),
 						{
-								url: Library.typeIdentifierToURL(identifier, Configuration.get(Configuration.LIBRARY_ROOT)),
+								url: Library.typeIdentifierToURL(identifier, Configuration.get(Configuration.LIBRARY_ROOT), 'js'),
 								method: 'GET',
 								async: true,
-								cache: false
+								cache: ! Configuration.get(Configuration.DEBUG_MODE) // caching is prevented in debug mode
 						}
 				) ;
  
@@ -2599,6 +2745,7 @@ error('error ("%s") :c', identifier) ;
 				
 				assert((s = definition.identifier), 'Illegal State: Missing required annotation (annotation-name="identifier")') ;
 				assert(s === identifier, 'Illegal State: Parsed type definition declares different type (expected-identifier="%s", declared-identifier="%s")', identifier, s) ;
+				assert(definition.deprecated !== true, 'Illegal State: Type definition is deprecated (identifier=%s)', identifier) ;
 				
 			// return
 			
@@ -2650,17 +2797,15 @@ error('error ("%s") :c', identifier) ;
 													
 											break ;
 
-											default:
-											
+											default: parsed[1] = valueOf(value) ;
+/*
 													switch(value)
 													{
-															case 'false'/*CONSTANTS.LITERAL_FALSE*/: parsed[1] = false ; break ;
-															case 'true'/*CONSTANTS.LITERAL_TRUE*/: parsed[1] = true ; break ;
+															case 'false': parsed[1] = false ; break ;
+															case 'true': parsed[1] = true ; break ;
 															default: parsed[1] = value ;
 													}
-											
-											break ;
-
+*/
 									}
 									
 							}
@@ -2767,32 +2912,105 @@ error('error ("%s") :c', identifier) ;
 		Configuration = {
 				/**The current configuration settings.*/
 				SETTINGS: { },
+				/***/
+				REQUIRE: 'require',
 				/**Key string for the debug mode setting.*/
 				DEBUG_MODE: 'debug-mode',
-				/**The key string for the "application-root" setting.*/
-				APPLICATION_ROOT: 'application-root',
 				/**The key string for the "library-root" setting.*/
 				LIBRARY_ROOT: 'library-root',
 				/**Key string for setting the interval length of the watch dog timer of the job queue.*/
-				QUEUE_TIMER_INTERVAL: 'queue-timer-interval'
+				TIMER_INTERVAL: 'timer-interval'
 		} ;
  
 		Configuration.set = function set(key, value) { Configuration.SETTINGS[key] = value ; return Configuration ; } ;
-		Configuration.get = function get(key) { return Configuration.SETTINGS[key] ; }
+		Configuration.get = function get(key) { return Configuration.SETTINGS[key] ; } ;
+		Configuration.parse = function parse( )
+		{
+ 
+			// variables
+ 
+			var script,
+				list,
+				s,
+				a,
+				job ;
+ 
+			//
+ 
+				list = DEFAULT_DOCUMENT.getElementsByTagName('script') ;
+				script = list.item(list.length - 1) ; // get a reference to this script element
+ 
+				Configuration.set('script', script) ;
+ 
+				if((s = script.getAttribute('data-' + Configuration.DEBUG_MODE))) Configuration.set(Configuration.DEBUG_MODE, valueOf(s.trim( ))) ; // use the weak comparison operator to force a type conversion between string and boolean
+				if((s = script.getAttribute('data-' + Configuration.LIBRARY_ROOT))) Configuration.set(Configuration.LIBRARY_ROOT, s.trim( )) ;
+				if((s = script.getAttribute('data-' + Configuration.TIMER_INTERVAL))) Configuration.set(Configuration.TIMER_INTERVAL, parseInt(s, 10)) ;
+ 
+				if((s = script.getAttribute('data-' + Configuration.REQUIRE)))
+				{
+ 
+						a = stringTokenize(s, ',')
+						.map(function(identifier) { return identifier.trim( ) ; }) ;
+ 
+						Configuration.set(Configuration.REQUIRE, arrayCopy(a, 0, a.length)) ;
+
+				}
+		} ;
 
 	//-- Default Values
 	
-		Configuration.set(Configuration.DEBUG_MODE, 'debug')
-		.set(Configuration.APPLICATION_ROOT, 'test.Application')
-		.set(Configuration.LIBRARY_ROOT, '/library/javascript')
-		.set(Configuration.QUEUE_TIMER_INTERVAL, 1) ;
-//		.set(Configuration.QUEUE_TIMER_INTERVAL, 10) ;
-// console.log('library-root: %s', Configuration.get(Configuration.LIBRARY_ROOT)) ;
+		Configuration.set(Configuration.DEBUG_MODE, true)
+		.set(Configuration.LIBRARY_ROOT, '/')
+		.set(Configuration.TIMER_INTERVAL, 10) ;
+
+		Configuration.parse( ) ;
 
 	// Initialize Application
-
-	var identifier = Configuration.get(Configuration.APPLICATION_ROOT) ;
+/*@qnd*/
+	var required, a,
+		script,
+		s ;
 	
-		require(identifier, function( ) { constructorOf(identifier).create( ) ; }) ;
+		if(! (required = Configuration.get(Configuration.REQUIRE))) required = [ ] ;
+		else required = arrayCopy(required, 0, required.length) ;
+
+		required.forEach(function(identifier) {
+				require(identifier, function(constructor) {
+						arrayRemove(required, required.indexOf(constructor.reflect.identifier)) ;
+				}) ;
+		}) ;
+ 
+		enqueue({callback: function( ) { }, active: function( ) {
+
+				if(arrayEmpty(required))
+				{
+
+					var names = [ ], values = [ ], a ;
+				
+						objectEach(Library.PACKAGES, function(v, k) { names[names.length] = k ; values[values.length] = v ; }) ;
+
+						if((a = Configuration.get(Configuration.REQUIRE))) a.forEach(function(v) {
+						
+							var constructor ;
+							
+								constructor = constructorOf(v) ;
+								names[names.length] = constructor.reflect.name ;
+								values[values.length] = constructor ;
+								
+						}) ;
+				
+						objectEach(Core, function(v, k) { names[names.length] = k ; values[values.length] = v ; }) ; // add core operations and attributes
+
+						script = Configuration.get('script') ;
+						names[names.length] = script.textContent || script.innerText ;
+
+						(Function.apply(null, names))
+						.apply(null, values)
+
+						return -1 ;
+				
+				}
+				else return 0 ;
+		}}) ;
 
 })(this) ;

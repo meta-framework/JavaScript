@@ -16,32 +16,38 @@
 			//
 			
 				this.iterable = iterable ;
+				this.current_index = -1 ;
+				this.current_element = null ;
 
 		},
 		local:
 		{
 				iterable: null,
-				current: -1,
+				/**
+				* The index of the current element.
+				*
+				* @type Integer
+				*/
+				current_index: null,
+				current_element: null,
+				hasNext: function hasNext( ) { return this.current_index + 1 < this.iterable.length( ) ; },
 				next: function next( )
 				{
 				
-					// variables
-					
-					var i ;
-					
 					//
 					
-						if((i = ++this.current) < this.iterable.length( )) return this.iterable.get(i) ;
-						else throw new Error('Index out of bounds.') ;
+						if(this.hasNext( ))
+						{
 						
+								this.current_element = this.iterable.get(++this.current_index) ; // get the element for the next index and increment the index counter
+								return this.current_element ;
+							
+						}
+					
 					// return
 					
 					return null ;
 
-				},
-				hasNext: function hasNext( )
-				{
-					return this.current + 1 < this.iterable.length( ) ;
 				},
 				forEach: function forEach(callback, context)
 				{
@@ -52,12 +58,13 @@
 					
 					//
 					
-						a = [,,this.iterable] ;
+						a = [,,this] ;
 
 						while(this.hasNext( ))
 						{
 
-								a[0] = this.next( ), a[1] = this.current ;
+								a[0] = this.next( );
+								a[1] = this.current_index ;
 
 								callback.apply(context, a) ;
 								

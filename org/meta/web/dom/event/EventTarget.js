@@ -8,7 +8,7 @@
 		{
 		
 				this.target = target ;
-				this.listeners = { } ;
+//				this.listeners = { } ;
 
 		},
 		global:
@@ -18,7 +18,7 @@
 					
 					// preconditions
 					
-						assert(DOM.isElement(target) || DOM.isDocument(target) || isWindow(target), 'Invalid type for formal parameter `target`.') ;
+						assert(DOM.isElement(target) || DOM.isDocument(target) || isWindow(target), 'Invalid Argument: Argument for formal parameter "target" must be DOM element, DOM document or DOM window.') ;
 
 					// return
 				
@@ -47,48 +47,56 @@
 						objectDestroy(this) ; // call to super's destroy operation is skipped since it contains redundant event listener removal
 
 				},
-				addListener: function addListener(event, listener)
+				/**
+				* @param (String) type The event name to register the given listener for.
+				* @param (EventListener) listener An event listener instance.
+				*/
+				addListener: function addListener(type, listener)
 				{
 					
 					//
-
+					
 						/*Add the listener to the listener collection.*/
-						org.meta.web.dom.event.EventTarget.super.invoke('addListener', this, [event, listener]) ;
+						org.meta.web.dom.event.EventTarget.super.invoke('addListener', this, type, listener) ;
 
 						/*Add the event listener to the DOM object.*/
-						Events.addListener(this.target, event, listener) ;
+						Events.addListener(this.target, type, listener) ;
 				
 				},
-				removeListener: function removeListener(event, listener)
+				/**
+				* @param (String) type The event name to remove the given listener for.
+				* @param (EventListener) listener An event listener instance.
+				*/
+				removeListener: function removeListener(type, listener)
 				{
 				
 					//
 
 						/*Remove the listener from the listener collection.*/
-						org.meta.web.dom.event.EventTarget.super.invoke('removeListener', this, [event, listener]) ;
+						org.meta.web.dom.event.EventTarget.super.invoke('removeListener', this, type, listener) ;
 					
 						/*Remove the listener from the DOM object.*/
-						Events.removeListener(this.target, event, listener) ;
+						Events.removeListener(this.target, type, listener) ;
 					
 				},
 				/**
 				* {@see org.meta.web.dom.event.Events}
 				* @link https://developer.mozilla.org/en-US/docs/Web/Guide/Events/Creating_and_triggering_events
-				* @param (String) event The event name.
-				* @param (Object) detail An object the properties of which characterize the event.
-				* @param (Integer) attribute An attribute bitmap containing bit flags for certain event properties
+				* @param (String) type The event type.
+				* @param (Object) properties An object containing properties characterizing the event.
 				*/
-				triggerEvent: function triggerEvent(event, detail, attributes)
+				triggerEvent: function triggerEvent(type, properties)
 				{
-
+// console.log('%s#triggerEvent (%s)', this.constructor.getType( ), type) ;
 						Events.triggerEvent(
 								this.target,
-								event,
+								type,
+								properties/*
 								{
 										bubbles: ((attributes & Events.EVENT_BUBBLES) === 1),
 										cancelable: ((attributes & Event.EVENT_CANCELABLE) === 1),
 										detail: detail
-								}
+								}*/
 						) ;
 				}
 		}

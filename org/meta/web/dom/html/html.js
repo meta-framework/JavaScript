@@ -116,10 +116,18 @@
 								} ;
 						else error('DOM implementation does not support `Element.prototype.querySelectorAll`.') ;
 				})( ),
+				/**
+				* @link https://developer.mozilla.org/en-US/docs/Web/API/Element.innerHTML
+				* @link http://msdn.microsoft.com/en-us/library/ms533897%28VS.85%29.aspx
+				*/
+				clear: function clear(element)
+				{
+						element.innerHTML = '' ;
+				},
 				hasAttribute: function hasAttribute(element, name) { return DOM.hasAttribute(element, name/*,  HTML.NAMESPACE_URI_XHTML*/) ; },
 				setAttribute: function setAttribute(element, name, value) { DOM.setAttribute(element, name, value/*, HTML.NAMESPACE_URI_XHTML*/) ; },
 				getAttribute: function getAttribute(element, name) { return DOM.getAttribute(element, name/*, HTML.NAMESPACE_URI_XHTML*/) ; },
-				removeAttribute: function removeAttribute(element, name) { return DOM.removeAttribute(eleemnt, name/*,  HTML.NAMESPACE_PREFIX_XHTML*/) ; },
+				removeAttribute: function removeAttribute(element, name) { return DOM.removeAttribute(element, name/*,  HTML.NAMESPACE_PREFIX_XHTML*/) ; },
 				hasClass: (function( ) {
 						if(isSet('classList', DEFAULT_DOCUMENT.documentElement)) return function hasClass(element, name)
 						{

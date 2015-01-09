@@ -3,6 +3,7 @@
 @extend org.meta.Object
 @require org.meta.util.StringBuilder, org.meta.web.css.CSS
 @description ...
+@deprecated renamed to "CSSStyleDeclaration" in keeping with the W3C nomenclature
 */
 {
 		main: function main(argv) { this.rules = { } ; },
