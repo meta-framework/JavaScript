@@ -1,7 +1,7 @@
 /*
 @identifier org.meta.web.URI
 @extend org.meta.Object
-@require org.meta.util.Matcher, org.meta.util.Tokenizer, org.meta.util.StringBuilder
+@require org.meta.util.Matcher, org.meta.util.StringTokenizer, org.meta.util.StringBuilder
 @description An object representation of a URL.
 @link [IETF-2005] http://www.ietf.org/rfc/rfc3986.txt
 @link [IETF-1994] http://tools.ietf.org/html/rfc1738
@@ -233,7 +233,7 @@ console.log('URI::create') ;
 						
 						//
 						
-							t = Tokenizer.create(query_string) ;
+							t =	StringTokenizer.create(query_string) ;
 							t.tokenize('&', function(string) {
 
 									a = string.split('=') ;

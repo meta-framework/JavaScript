@@ -1,7 +1,7 @@
 /*
 @identifier org.meta.web.css.CSS
 @extend org.meta.Object
-@require org.meta.util.Tokenizer, org.meta.web.dom.html.HTML
+@require org.meta.web.dom.html.HTML
 @todo: add style adapters and utility functions for typical element stylings.
 @todo add full list of media queries
 */

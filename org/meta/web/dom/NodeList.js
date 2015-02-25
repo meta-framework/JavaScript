@@ -12,7 +12,7 @@
 
 					// preconditions
 
-						assert(isInstanceOf(GLOBAL_OBJECT.NodeList, nodes) || isInstanceOf(GLOBAL_OBJECT.HTMLCollection, nodes), 'Illegal Argument: object for formal parameter `nodes` has invalid type.') ;
+						assert(isArray(nodes), isInstanceOf(GLOBAL_OBJECT.NodeList, nodes) || isInstanceOf(GLOBAL_OBJECT.HTMLCollection, nodes), 'Illegal Argument: object for formal parameter `nodes` has invalid type.') ;
 						
 					// return
 					
@@ -22,8 +22,9 @@
 		},
 		local:
 		{
-				get: function get(index) { return this.nodes.item(index) ; },
+				get: function get(index) { return isArray(this.nodes) ? this.nodes[index] : this.nodes.item(index) ; },
 				length: function length( ) { return this.nodes.length ; },
-				iterator: function iterator( ) { return NodeIterator.create(this) ; }
+				/*@deprecated*/
+				_iterator: function iterator( ) { return NodeIterator.create(this) ; }
 		}
 }

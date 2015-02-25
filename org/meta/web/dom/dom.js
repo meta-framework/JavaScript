@@ -5,7 +5,7 @@
 */
 {
 		global: {
-		
+
 			// testing functions
 				
 				isDocument: function isDocument(node) { return this.typeOf(node) === Node.DOCUMENT_NODE ; },

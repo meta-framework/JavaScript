@@ -9,6 +9,7 @@
 		{
 				length: function length( ) { }, // abstract
 				get: function get(index) { }, // abstract
-				iterator: function iterator( ) { }
+				/*@deprecated: too much coupling*/
+				_iterator: function iterator( ) { }
 		}
 }

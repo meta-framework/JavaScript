@@ -1,75 +1,31 @@
 /*
+@abstract
 @identifier org.meta.logic.Iterator
-@type abstract
 @extend org.meta.Object
 @require org.meta.logic.Iterable
 @description Abstract object implementing the standard operations of an iterator pattern.
 */
 {
-		main: function main(iterable)
-		{
-		
-			// preconditions
-			
-				assert(isInstanceOf(Iterable, iterable), 'Invalid type for argument `iterable`.') ;
-				
-			//
-			
-				this.iterable = iterable ;
-				this.current_index = -1 ;
-				this.current_element = null ;
-
-		},
 		local:
 		{
-				iterable: null,
 				/**
-				* The index of the current element.
-				*
-				* @type Integer
+				* @type <? extend Iterable>
 				*/
-				current_index: null,
-				current_element: null,
-				hasNext: function hasNext( ) { return this.current_index + 1 < this.iterable.length( ) ; },
-				next: function next( )
-				{
-				
-					//
-					
-						if(this.hasNext( ))
-						{
-						
-								this.current_element = this.iterable.get(++this.current_index) ; // get the element for the next index and increment the index counter
-								return this.current_element ;
-							
-						}
-					
-					// return
-					
-					return null ;
-
-				},
-				forEach: function forEach(callback, context)
-				{
-				
-					// variables
-					
-					var a ;
-					
-					//
-					
-						a = [,,this] ;
-
-						while(this.hasNext( ))
-						{
-
-								a[0] = this.next( );
-								a[1] = this.current_index ;
-
-								callback.apply(context, a) ;
-								
-						}
-
-				}
+				iterable: null,
+				index: null,
+				current: null,
+				/**
+				*/
+				hasNext: function hasNext( ) { return !! this.current ; },
+				/**
+				* @abstract
+				*/
+				next: function next( ) { },
+				/**
+				* @abstract
+				* @contract Iterate over the elements in the iterable object passing the iterator state and supplying the context. Iteration may be interrupted.
+				* @implementation The callback is ought to be called with the given context or `null` passing---in this order---the current element, the current index and a reference to this iterator instance on the given context or no context. If the callback explicitely returns `false` the operation should return thus discontinuing iteration.
+				*/
+				each: function each(callback, context) { }
 		}
 }

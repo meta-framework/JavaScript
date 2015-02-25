@@ -1,7 +1,7 @@
 /*
 @identifier org.meta.web.dom.html.HTML
 @extend org.meta.web.dom.DOM
-@require org.meta.web.dom.DOM, org.meta.web.dom.NodeList
+@require org.meta.util.StringTokenizer, org.meta.web.dom.DOM, org.meta.web.dom.NodeList
 */
 {
 		global:
@@ -154,7 +154,7 @@
 							
 							//
 								
-								new Tokenizer(HTML.getClass( ))
+								new StringTokenizer(HTML.getClass(element))
 								.tokenize(' ', function(token) {if(token === name) { b = true ; return false ; }}) ;
 								
 							//
@@ -216,14 +216,17 @@
 									// variables
 									
 									var s,
-										a ;
+										a,
+										b = false ; // contains class name
 									
 									//
 										
-										a = new Tokenizer((s = HTML.getClass( )))
-										.tokenize(' ') ;
-										
-										if(a.indexOf(name) === -1) HTML.setClass(s + ' ' + name) ;
+										new StringTokenizer((s = HTML.getClass(element)))
+										.tokenize(' ', function(token) {
+												if(token === name) { b = true ; return false ; }
+										}) ;
+						   
+										if(! b) HTML.setClass(s + ' ' + name) ;
 										
 								}
 						}
@@ -256,15 +259,17 @@
 										
 									// variables
 									
-									var s,
-										a,
-										i ;
+									var a = [ ] ;
 									
 									//
-										
-										a = new Tokenizer((s = HTML.getClass( )))
-										.tokenize(' ') ;
-										
+							  
+										new StringTokenizer(HTML.getClass(element))
+										.tokenize(' ', function(token) {
+												if(token !== name) a[a.length] = token ;
+										})
+							  
+										HTML.setClass(element, a.join(' ')) ;
+/*
 										if((i = a.indexOf(name)) === -1) {
 										
 												a.splice(i, 1) ;
@@ -272,25 +277,24 @@
 												HTML.setClass(a.join(' ')) ;
 												
 										}
-										
+*/
 								}
 						}
 				})( ),
+				/**
+				* @todo implement
+				*/
 				toggleClass: (function( ) {
-						if(isSet('classList', DEFAULT_DOCUMENT.documentElement))
-								return function removeClass(element, name)
-								{
-								
-									// preconditions
-									
-										assert(this.isElement(element), 'Illegal Argument: invalid type for formal parameter `element`') ;
-										
-									//
-									
-										element.classList.remove(name) ;
-								
-								}
-						else
+
+						if(isSet('classList', DEFAULT_DOCUMENT.documentElement)) return function toggleClass(element, name)
+						{
+error('not implemented') ;
+						}
+						else return function toggleClass(element, name)
+						{
+error('not implemented') ;
+}
+/*
 						{
 								return function removeClass(element, name)
 								{
@@ -307,7 +311,7 @@
 									
 									//
 										
-										a = new Tokenizer((s = HTML.getClass( )))
+										a = new StringTokenizer((s = HTML.getClass(element)))
 										.tokenize(' ') ;
 										
 										if((i = a.indexOf(name)) === -1) {
@@ -320,7 +324,7 @@
 										
 								}
 						}
-
+*/
 				})( )
 		}				
 }

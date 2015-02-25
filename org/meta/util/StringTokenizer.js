@@ -1,5 +1,5 @@
 /*
-@identifier org.meta.util.Tokenizer
+@identifier org.meta.util.StringTokenizer
 @extend org.meta.Object
 */
 {
@@ -15,15 +15,18 @@
 
 					// variables
 					
-					var index = 0, last = 0, skip = token.length, counter = -1, stop ;
+					var index = 0, last = 0, skip = token.length, counter = -1, stop,
+						a = [,,,,this] ;
 					
 					//
 					
 						/*Find indexes for the given delimiter and gather leading substrings.*/
 						while((index = this.string.indexOf(token, last)) !== -1)
 						{
+							
+								a[0] = this.string.substring(last, index), a[1] = last,	a[2] = index, a[3] = ++counter ;
 						
-								if(callback.apply(null, [this.string.substring(last, index), ++counter]) === false) return ; // break in case the callback returns false
+								if(callback.apply(null, a) === false) return ; // break in case the callback returns false
 								
 								last = index + skip ;
 								
@@ -32,7 +35,14 @@
 						/*Gather a potential trailing substring after the last delimiter's index (or the start index if none was found).*/
 						stop = this.string.length ;
 					
-						if(last + 1 < stop) callback.apply(null, [this.string.substring(last, stop), ++counter]) ; // strictly speaking we should return upon a false return of the callback, but this is the last statement anyway
+						if(last + 1 < stop)
+						{
+						
+								a[0] = this.string.substring(last, stop), a[1] = last, a[2] = stop, a[3] = ++counter ;
+						
+								callback.apply(null, a) ; // strictly speaking we should return upon a false return of the callback, but this is the last statement anyway
+							
+						}
 				
 				}
 		}

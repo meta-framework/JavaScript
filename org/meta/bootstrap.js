@@ -385,8 +385,10 @@
 	
 	//- Core Object Attributes
 
-	//-- Context
+	//-- System
 	
+	//--- DOM
+
 		/**
 		* A reference to the global context.
 		*
@@ -397,7 +399,7 @@
 		Core.DEFAULT_DOCUMENT = DEFAULT_DOCUMENT = (function( ) { try { if(typeof GLOBAL_OBJECT.document !== 'undefined') return GLOBAL_OBJECT.document ; } catch(e) { } return null ; })( ) ;//GLOBAL_OBJECT.document || null ;
 		Core.IS_BROWSER = !! Core.DEFAULT_WINDOW && !! Core.DEFAULT_DOCUMENT ;
 
-	//-- UA
+	//--- UA
 
 		/**
 		* @link http://www.quirksmode.org/dom/w3c_cssom.html#screenview
@@ -421,7 +423,7 @@
 					return false ;
 		})( ) ;
  
-	//--- WebKit
+	//---- WebKit
 	
 		/**
 		* WebKit detection.
@@ -430,7 +432,7 @@
 		*/
 		Core.IS_WEBKIT = (function( ) { return DEFAULT_WINDOW.navigator && DEFAULT_WINDOW.navigator.userAgent.indexOf('AppleWebKit') !== -1 ; })( ) ;
  
-	//--- IE
+	//---- IE
 
 		/**
 		*IE detection.
@@ -465,7 +467,7 @@
 		/*@deprecated: refactored into `requestCreate`*/
 		Core.IE_XMLHTTP_VERSIONS = ['Msxml2.XMLHTTP.6.0','Msxml2.XMLHTTP.3.0','Microsoft.XMLHTTP'],
  
-	//--- Opera
+	//---- Opera
 		
 		Core.IS_OPERA =	(function( ) { try { Core.IS_BROWSER ? typeof GLOBAL_OBJECT.opera !== 'undefined' : false } catch(e) { return false ; } })( ) ;
 		/**
@@ -476,26 +478,6 @@
 				POST: 'POST'
 		} ;
 	
-	//-- XHR
-
-		Core.XHR_READY_STATES = {
-				UNSENT: 0,
-				OPENEND: 1,
-				RECEIVED: 2,
-				LOADING: 3,
-				DONE: 4
-		} ;
-
-	//-- MIME
-	
-		Core.MIME_TYPES = {
-				TEXT: 'text/plain',
-				CSS: 'text/css',
-				XML: 'application/xml',
-				JSON: 'text/json',
-				JAVASCRIPT: 'application/javascript'
-		} ;
- 
 	//-- Miscellaneous
 	// @todo need to be made constant (where possible)
 		
@@ -516,9 +498,29 @@
 		Core.TYPE_FLOAT = 'float' ;
 		Core.TYPE_STRING = 'string' ;
  
+	//--- XHR
+
+		Core.XHR_READY_STATES = {
+				UNSENT: 0,
+				OPENEND: 1,
+				RECEIVED: 2,
+				LOADING: 3,
+				DONE: 4
+		} ;
+
+	//--- MIME
+	
+		Core.MIME_TYPES = {
+				TEXT: 'text/plain',
+				CSS: 'text/css',
+				XML: 'application/xml',
+				JSON: 'text/json',
+				JAVASCRIPT: 'application/javascript'
+		} ;
+ 
 	//- Core Object Operations
 	// @todo use the homogenized operations of the core objects.
-
+	
 	//-- Type Identification
 
 		/**
@@ -849,66 +851,6 @@
 			
 				return false ;
 				
-		} ;
-		
-	//- Code Flow Operations
-	
-		/**
-		* Throw a generic error. 
-		*
-		* The error message may be a string containing formatting tokens. In this case the arguments following the error message argument may contain the substitute strings (or, objects).
-		* 
-		* @example `error("Invalid type for parameter: %s", typeOf(object));`
-		*/
-		Core.error = error = function error(message, substitute/*...*/)
-		{
-		
-			// variables
-			
-			var s ;
-			
-			//
-			
-				if(arguments.length > 1) s = stringFormat.apply(null, arguments) ;
-				else s = message ;
-
-				throw new Error(s) ;
-				
-		} ;
-
-		/**
-		* Tests for an assertion.
-		* 
-		* An assertion is a test for the consistency of the actual program state with the intended program state. Assertions for example provide a convenient interface to test for pre- and/ or postconditions of operations (such as validity of arguments or the return value), i.e. to test whether the operation's behavior is as intended.
-		* The error message---and potential string substituation arguments---will be passed to `::error` in order to raise a generic error (with a formatted error message).
-		*
-		* @example `assert(x === y, 'Illegal State: Values have to be equal (x=%s, y=%s).', x, y) ;`
-		* @todo re-enable assertion silencing in production mode
-		*/
-		Core.assert = assert = function assert(assertion, message, substitute/*...*/)
-		{
- 
-			// variables
-			
-			var s ;
-			
-			//
- 
-				/*If the assertion was violated, raise an error.*/
-				if(! assertion)
-				{
-				
-						if(arguments.length > 2) error.apply(null, arrayCopy(arguments, 1, arguments.length)) ; //s = stringFormat.apply(null, arrayCopy(arguments, 1, arguments.length)) ;
-						else error(message) ; //s = message ;
-						
-//						throw new Error(s) ;
-						
-				}
-				
-			// return
-			
-				return this ;
-
 		} ;
 
 	//- String Operations
@@ -1365,8 +1307,84 @@
 		
 		} ;
  
+	//-- Utility
+	
+		/**
+		*
+		*/
+		Core.out = (function( ) {
+				if(GLOBAL_OBJECT.console) return function out(message/*, substitute*/)
+				{
+						if(arguments.length > 1) console.log.apply(null, arguments) ;
+						else console.log(message) ;
+				}
+				else return function out(message/*, substitute*/)
+				{
+						if(arguments.length > 1) alert(stringFormat.apply(null, arguments)) ;
+						else alert(message) ;
+				}
+		})( ) ;
+	
+		/**
+		* Throw a generic error. 
+		*
+		* The error message may be a string containing formatting tokens. In this case the arguments following the error message argument may contain the substitute strings (or, objects).
+		* 
+		* @example `error("Invalid type for parameter: %s", typeOf(object));`
+		*/
+		Core.error = error = function error(message/*, substitute...*/)
+		{
+		
+			// variables
+			
+			var s ;
+			
+			//
+			
+				if(arguments.length > 1) s = stringFormat.apply(null, arguments) ;
+				else s = message ;
+
+				throw new Error(s) ;
+				
+		} ;
+
+		/**
+		* Tests for an assertion.
+		* 
+		* An assertion is a test for the consistency of the actual program state with the intended program state. Assertions for example provide a convenient interface to test for pre- and/ or postconditions of operations (such as validity of arguments or the return value), i.e. to test whether the operation's behavior is as intended.
+		* The error message---and potential string substituation arguments---will be passed to `::error` in order to raise a generic error (with a formatted error message).
+		*
+		* @example `assert(x === y, 'Illegal State: Values have to be equal (x=%s, y=%s).', x, y) ;`
+		* @todo re-enable assertion silencing in production mode
+		*/
+		Core.assert = assert = function assert(assertion, message/*, substitute...*/)
+		{
+ 
+			// variables
+			
+			var s ;
+			
+			//
+ 
+				/*If the assertion was violated, raise an error.*/
+				if(! assertion)
+				{
+				
+						if(arguments.length > 2) error.apply(null, arrayCopy(arguments, 1, arguments.length)) ; //s = stringFormat.apply(null, arrayCopy(arguments, 1, arguments.length)) ;
+						else error(message) ; //s = message ;
+						
+//						throw new Error(s) ;
+						
+				}
+				
+			// return
+			
+				return this ;
+
+		} ;
+ 
 	//--- Ring Operations
-	// @note A ring is a doubly linked list where the list head is designated element
+	// @note A ring is a doubly linked list where the list head is a designated element
 	
 		/**
 		* @param (Object) ring The top element of the ring. If this is `null`, the second argument is made into the new top element of the ring.
@@ -1388,6 +1406,7 @@
 				else
 				{
 
+						/*Add the element right before the ring top element.*/
 						element.next = ring ;
 						element.previous = ring.previous ;
 						ring.previous.next = element ;
@@ -1421,12 +1440,7 @@
 						ring.previous.next = top ;
  
 				}
-
-				/*Remove pointers from the previous top element./
-				delete ring.next ;
-				delete ring.previous ;
-*/
- assert(top !== ring || (isSet('next', top) && isSet('previous', top)), '!') ;
+assert(top !== ring || (isSet('next', top) && isSet('previous', top)), '!') ;
 			// return
 
 				return top ;
@@ -1500,7 +1514,8 @@
 				
 					// variables
 					
-					var request ;
+					var request,
+						s ;
 					
 					//
 					
@@ -1645,7 +1660,6 @@
 //				assert(isSet('identifier', properties), 'Illegal State: Missing required property "identifier"') ;
  
 //				identifier = properties.identifier ;
- 
 				assert(! isSet(identifier, Library.CONSTRUCTORS), 'Illegal State: Type already defined (%s)', identifier) ;
 // console.log('Core::define (%s)', identifier) ;
 				/*Create a constructor for the given type and store it on the library.*/
@@ -1655,7 +1669,7 @@
 
  				/*Store the constructor under its namespace on the packages container of the library.*/
 				(objectCreateNamespace(reflect.namespace, Library.PACKAGES))[reflect.name] = constructor ;
- 
+
 				Library.defineType(constructor, properties) ;
 
 			// return
@@ -2399,8 +2413,8 @@ assert(Queue.TOP.job.getID( ) === job.getID( ), 'Illegal State: Job to continue 
 				if((extend = properties.extend)) Library.definePrototype(extend, constructor) ;
  
 				/*Validate the main operation.*/
-				if((main = reflect.main = extend ? properties.main || extend.reflect.main : VOID)) assert(main.length > 0, 'Invalid main method. Formal parameter list may not be empty (identifier="%s")', reflect.identifier) ; // technically, calls to the constructor which are not used to create a prototype object must have at least one argument (and the formal parameter list does not necessarily have to reflect that, i.e. may be undefined); so, this actually only serves as a reminder
- 
+				if((main = reflect.main = extend ? properties.main || extend.reflect.main : properties.main || VOID)) assert(main.length > 0, 'Invalid main method. Formal parameter list may not be empty (identifier="%s")', reflect.identifier) ; // technically, calls to the constructor which are not used to create a prototype object must have at least one argument (and the formal parameter list does not necessarily have to reflect that, i.e. may be undefined); so, this actually only serves as a reminder
+
 				/*Put global properties on the constructor function.*/
 				Library.defineGlobalProperties(constructor, properties.global) ;
 
@@ -2819,7 +2833,11 @@ error('error ("%s") :c', identifier) ;
 
 		} ;
 
-		/**Compile an object definition from its source.*/
+		/**
+		* Compile an object definition from its source.
+		* 
+		* @todo implement the "@implements" check (implementing types must---after inheritance---contain the attribute key set of the implemented type---after inheritance---as a subset of their attribute key set; i.e. if A  is the implemented type and B is the implementing type, if regarding the attribut key set the partial order A ≤ B is given, then B implements A)
+		*/
 		Library.compileDefinition = function compileDefinition(identifier)
 		{
 // console.log('Library::compileDefinition (%s)', identifier) ;
@@ -2919,25 +2937,39 @@ error('error ("%s") :c', identifier) ;
 				/**The key string for the "library-root" setting.*/
 				LIBRARY_ROOT: 'library-root',
 				/**Key string for setting the interval length of the watch dog timer of the job queue.*/
-				TIMER_INTERVAL: 'timer-interval'
+				TIMER_INTERVAL: 'timer-interval',
+				/**Key string for settting the root application type.*/
+				APPLICATION_TYPE: 'application-type'
 		} ;
  
 		Configuration.set = function set(key, value) { Configuration.SETTINGS[key] = value ; return Configuration ; } ;
 		Configuration.get = function get(key) { return Configuration.SETTINGS[key] ; } ;
 		Configuration.parse = function parse( )
 		{
- 
+
 			// variables
  
-			var script,
-				list,
+			var root,
 				s,
-				a,
-				job ;
+				a ;
  
 			//
  
-				list = DEFAULT_DOCUMENT.getElementsByTagName('script') ;
+				root = DEFAULT_DOCUMENT.documentElement ;
+ 
+				if((s = root.getAttribute('meta:' + Configuration.DEBUG_MODE))) Configuration.set(Configuration.DEBUG_MODE, valueOf(s.trim( ))) ;
+				if((s = root.getAttribute('meta:' + Configuration.LIBRARY_ROOT))) Configuration.set(Configuration.LIBRARY_ROOT, s.trim( )) ;
+				if((s = root.getAttribute('meta:' + Configuration.TIMER_INTERVAL))) Configuration.set('data-meta-' + Configuration.TIMER_INTERVAL, parseInt(s, 10)) ;
+				if((s = root.getAttribute('meta:' + Configuration.APPLICATION_TYPE)))
+				{
+
+						require(s.trim( ), function(constructor) {
+								if(isSet('create', constructor)) constructor.create( ) ;
+								else constructor(null) ;
+						}) ;
+
+				}
+/*
 				script = list.item(list.length - 1) ; // get a reference to this script element
  
 				Configuration.set('script', script) ;
@@ -2955,18 +2987,19 @@ error('error ("%s") :c', identifier) ;
 						Configuration.set(Configuration.REQUIRE, arrayCopy(a, 0, a.length)) ;
 
 				}
+*/
 		} ;
 
 	//-- Default Values
 	
 		Configuration.set(Configuration.DEBUG_MODE, true)
 		.set(Configuration.LIBRARY_ROOT, '/')
-		.set(Configuration.TIMER_INTERVAL, 10) ;
+		.set(Configuration.TIMER_INTERVAL, 1) ;
 
 		Configuration.parse( ) ;
 
 	// Initialize Application
-/*@qnd*/
+/*@qnd*
 	var required, a,
 		script,
 		s ;
@@ -3012,5 +3045,5 @@ error('error ("%s") :c', identifier) ;
 				}
 				else return 0 ;
 		}}) ;
-
+*/
 })(this) ;

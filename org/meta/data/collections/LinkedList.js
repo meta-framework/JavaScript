@@ -1,36 +1,43 @@
 /*
 @identifier org.meta.data.collections.LinkedList
-@extend org.meta.logic.Iterable
+@extend org.meta.data.collections.Collection
+@implement org.meta.data.collections.Collection
 @require org.meta.logic.Iterator
 @description A linked list implementation.
 */
 (function( ) {
 var LinkedList$Iterator = define('org.meta.data.collections.LinkedList$Iterator', {
 		extend: Iterator,
-		main: function main(list)
+		main: function main(list, head_element)
 		{
 				this.iterable = list ;
+				
 				this.current_index = -1 ;
-				this.current_element = list.head ;
+				this.current_element = head_element ;
+				
+				this.head_element = head_element ;
 
 		},
 		local:
 		{
-				/**@type org.meta.data.collections.LinkedList*/
-				list: null,
+				head_element: null,
 				hasNext: function hasNext( ) { return !! this.current_element.next ; },
 				next: function next( )
 				{
+					
+					// variables
+					
+					var element ;
 					
 					//
 					
 						if(this.hasNext( ))
 						{
 						
-								this.current_element = this.current_element.next ;
+								element = this.current_element = this.current_element.next ;
 								this.current_index++ ;
 								
-								return this.current_element ;
+								return element.value ;
 								
 						}
 						
@@ -61,14 +68,6 @@ var LinkedList$Iterator = define('org.meta.data.collections.LinkedList$Iterator'
 		}
 }) ;
 return {
-		main: function main(/*attributes, limit,*/ comparator)
-		{
-//				this.attributes = attributes ;
-//				this.limit = limit ;
-				this.comparator = comparator ;
-
-				this.head = {next: null} ;
-		},
 		global:
 		{
 				SORT_DEFAULT: 1,
@@ -77,49 +76,51 @@ return {
 				* @link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Comparison_Operators
 				* @todo refactor into `Comparable` or `compareTo(a, b)`
 				* @todo use `String.prototype.localeCompare` where possible
+				* @todo The initial `typeOf(a)` test is expensive. Should be `if(isVoid(a)) return isVoid(b) ? 0 : Number.POSITIVE_INFINITY ; else if(isNull(a)) ... ; else return Number.POSITIVE_INFINITY ;`
+				* @todo number comparisons are really slow (slower than string comparisons)!?
 				*/
 				DEFAULT_COMPARATOR: function compare(a, b)
 				{
 					
+					// variables
+ 
+					var length ;
+ 
 					//
-					
-						switch(typeOf(a))
+ 
+						if(isVoid(a)) return isVoid(b) ? 0 : Number.POSITIVE_INFINITY ;
+						else if(isNull(a)) return isNull(b) ? 0 : Number.POSITIVE_INFINITY ;
+						else if(isBoolean(a)) return isBoolean(b) ? (a === b ? 0 : (a === true ? 1 : -1)) : Number.POSITIVE_INFINITY ; // `true` ranks higher than `false`
+						else if(typeof a === 'number'/*isNumber(a)*/) return typeof b === 'number' /*isNumber(b)*/ ? (a === b ? 0 : (a > b ? 1 : -1)) : Number.POSITIVE_INFINITY ; // the `Core::isNumber` operation is really slow for some reason
+						else if(isString(a))
 						{
-								case TYPE_VOID: return isVoid(b) ? 0 : Number.POSITIVE_INFINITY ; break ;
-								case TYPE_NULL: return isNull(b) ? 0 : Number.POSITIVE_INFINITY ; break ;
-								case TYPE_BOOLEAN:
-										if(isBoolean(b)) return a === b ? 0 : (a === false ? -1 : 1) ; // `true` ranks higher than `false`
-										else return Number.POSITIVE_INFINITY ;
-								break ;
-								case TYPE_NUMBER:
-										if(isNumber(b)) return a < b ? -1 : (a > b ? 1 : 0) ;
-										 // do not use the comparison operator first since testing for number inequality should be faster
-										else return Number.POSITIVE_INFINITY ;
-								break ;
-								case TYPE_STRING:
-										if(isString(b))
+								if(isString(b))
+								{
+										if((length = a.length) > b.length) return 1 ;
+										else if(length < b.length) return -1 ;
+										else
 										{
-										
-											var length = a.length ;
-											
-												if(length < b.length) return -1 ;  // do not use the comparison operator first since testing for length inequality entails string inequality and this should be faster
-												else if(length > b.length) return 1 ;
-												else // iterate over characters and compare char codes
+ 
+												/*Find the first pair of character within the strings whose character codes are not equal and compare character codes.*/
+												for(var i = -1 ; ++i < length ; )
 												{
-												
-													var i = -1,	char_code_a, char_code_b ;
-													
-														while(++i < length)
-																if((char_code_a = a.charCodeAt(i)) !== (char_code_b = b.charCodeAt(i))) return char_code_a < char_code_b ? -1 : 1 ;
-													
-														return 0 ; // strings are completely identical
-												
+ 
+														char_code_a = a.charCodeAt(i) ;
+														char_code_b = b.charCodeAt(i) ;
+ 
+														if(char_code_a > char_code_b) return 1 ;
+														else if(char_code_a < char_code_b) return -1 ;
+
 												}
+												
+												return 0 ;
+												
 										}
-										else return Number.POSITIVE_INFINITY ;
-								break ;
-								default: return Number.POSITIVE_INFINITY ; // non primitive types cannot be compared with the default comparator
+ 
+								}
+								else return Number.POSITIVE_INFINITY ;
 						}
+						else return Number.POSITIVE_INFINITY ; // non primitive types cannot be compared
 
 				},
 				create: function create(properties)
@@ -143,18 +144,17 @@ return {
 								
 										comparator = properties.comparator ;
 									
-										assert(isFunction(comparator), 'Invalid Argument: Custom sorting was specified but comparator property is not a function.') ;
+										if(! isFunction(comparator)) error('Invalid Argument: Custom sorting was specified but comparator property is not a function.') ;
 									
 								}
 								else if((attributes & LinkedList.SORT_DEFAULT) !== 0) comparator = LinkedList.DEFAULT_COMPARATOR ;
 								else comparator = null ;
 							
-								list = new this(/*attributes, limit,*/ comparator) ;
-							
-								list.add = LinkedList.addSorted ; // use the sorted addition algorithm
+								list = new this(comparator) ;
+								list.add = this.addSorted ; // use the sorted addition algorithm
 							
 						}
-						else list = new this(/*attributes || 0, limit || -1,*/ null) ;
+						else list = new this(null) ;
 						
 					// return
 					
@@ -166,52 +166,75 @@ return {
 				
 					// variables
 					
-					var previous, next, element ;
+					var previous, current, element ;
 					
 					//
 					
 						element = {value: value, next: null} ;
 
-						if((next = this.head.next))
+						if(! this.isEmpty( ))
 						{
 						
-								previous = this.head ;
+								current = this.head_element ;
 
-								do switch(this.comparator(value, next.value)) // start comparison with the element following the list head (the list head is a pseudo element)
+								do switch(this.comparator(value, current.value))
 								{
 										/*Values are equal; append to current element.*/
 										case 0:
-												element.next = next.next ;
-												next.next = element ;
+
+												element.next = current.next ; // append the rest of the list to the new element
+												current.next = element ; // append the new element to the current element
 										
 											// return
 
 												return ;
+
 										break ;
 										/*Given value ranks lower than current value; prepend to current element.*/
 										case -1:
-												previous.next = element ;
-												element.next = next ;
+ 
+												if(previous) previous.next = element ;
+												else this.head_element = element ;
+
+												element.next = current ;
 										
 											// return
 										
 												return ;
+
 										break ;
-										/*Given value ranks height than current value or is uncomparable; cycle reference to the previous element.*/
-										default: previous = next ;
+										/*Given value ranks higher than current value or is uncomparable; cycle reference to the previous element.*/
+										default: previous = current ;
 								}
-								while((next = next.next)) ;
+								while((current = current.next)) ;
 							
 								previous.next = element ; // new last element
 							
 						}
-						else this.head.next = element ;
+						else this.head_element = element ;
 
 				}
 		},
 		local:
 		{
-				head: null,
+				head_element: null,
+				isEmpty: function isEmpty( ) { return ! this.head_element ; },
+				iterator: function iterator( )
+				{
+						return new LinkedList$Iterator(this, this.head_element) ;
+				},
+				head: function head( )
+				{
+ 
+					//
+
+						if(this.isEmpty( )) error('Null Pointer Error: LinkedList is empty') ;
+ 
+					// return
+ 
+					return this.head_element.value ;
+
+				},
 				length: function length( )
 				{
  
@@ -222,7 +245,7 @@ return {
  
 					//
  
-						if((next = this.head.next))
+						if((next = this.head_element.next))
 						{
 								do length++ ;
 								while((next = next.next)) ;
@@ -238,22 +261,27 @@ return {
 				
 					// variables
 					
-					var next, element ;
+					var current, element ;
 					
 					//
 					
 						element = {value: value, next: null} ;
 					
-						if((next = this.head.next))
+						if(! this.isEmpty( ))
 						{
-					
-								while(next.next) next = next.next ;
-								next.next = element ;
+ 
+								current = this.head_element ;
+								while(current.next) current = current.next ;
+ 
+								current.next = element ; // append the element at the end of the list
 							
 						}
-						else this.head.next = element ;
+						else this.head_element = element ;
 						
 				},
+				/**
+				* Return the value at the given index.
+				*/
 				get: function get(index)
 				{
 				
@@ -264,18 +292,16 @@ return {
 					
 					//
 					
-						if((next = this.head.next))
+						if(! this.isEmpty( ))
 						{
-					
-							// return
+ 
+								next = this.head_element ;
+ 
+								// return
 							
-								do if(++i === index) return next ;
+								do if(++i === index) return next.value ;
 								while((next = next.next)) ;
-							
-							// return
-
-								return null ;
-							
+ 
 						}
 					
 					// return
@@ -288,94 +314,43 @@ return {
 				
 					// variables
 					
-					var previous, next,
+					var previous, current,
 						i = -1 ;
 					
 					//
  
-						if((next = this.head.next))
+						if(! this.isEmpty( )) // there is at least one element
 						{
-						
-								previous = this.head ;
-							
-								do if(++i === index)
+ 
+								current = this.head_element ;
+ 
+								if(index === 0) this.head_element = this.head_element.next ; // remove the head element
+								else
 								{
-								
-										previous.next = next.next ;
-								
-									// return
+ 
+										previous = this.head_element ;
+ 
+										do if(++i === index)
+										{
+										
+												previous.next = current.next ;
 
-										return true ;
-									
+												break ;
+											
+										}
+										else previous = current ;
+										while((current = current.next)) ;
+ 
 								}
-								else previous = next ;
-								while((next = next.next)) ;
-							
+ 
+								return current.value ;
+ 
 						}
 
 					// return
 					
-						return false ;
-
-				},
-				iterator: function iterator( )
-				{
-						return new LinkedList$Iterator(this) ;
-				},
-				contains: function contains(value)
-				{
- 
-					// variables
- 
-					var self = this,
-						comparator,
-						iterator,
-						next ;
- 
-					//
- 
-						comparator = this.comparator ? function(a, b) { return self.comparator(a, b) === 0 ; } : function(a, b) { return a === b ; } ;
-						iterator = this.iterator( ) ;
- 
-						while(iterator.hasNext( ))
-						{
-								next = iterator.next( ) ;
- 
-								if(comparator(value, next.value) === 0) return true ;
-						}
-
-					// return
-					
-						return false ;
-
-				},
-				/**
-				* @param (Function) cf A characterizing function.
-				* @param (Object) context The context object.
-				*/
-				find: function find(cf, context)
-				{
- 
-					// variables
- 
-					var iterator,
-						context = context || null,
-						next ;
- 
-					//
-
-						iterator = this.iterator( ) ;
- 
-						while(iterator.hasNext( ))
-						{
-								next = iterator.next( ) ;
-								if(cf.call(context, next.value) === true) return next.value ;
-						}
- 
-					// return
-
 						return null ;
- 
+
 				}
 		}
 } ;
