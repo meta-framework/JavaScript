@@ -58,7 +58,8 @@
 				* The `for <> in <>` control is used via `objectDestroy` in order to delete all enumerable properties (including those inherited from the prototype object).
 				*/
 				destroy: function destroy( ) { objectDestroy(this) ; },
-				copy: function copy( ) { return new this(null) ; },
+				/**@abstract*/
+				copy: function copy( ) { },
 				toString: function( ) { return '[object ' + this.constructor.name + ']' ; }
 		}
 }

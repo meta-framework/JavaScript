@@ -2,6 +2,7 @@
 @identifier org.meta.web.dom.NodeIterator
 @extend org.meta.logic.Iterator
 @require org.meta.web.dom.NodeList
+@todo use Stack and Queue instances for traversal orders
 */
 {
 		main: function main(list, order, mask)

@@ -2,8 +2,7 @@
 @abstract
 @identifier org.meta.logic.Iterator
 @extend org.meta.Object
-@require org.meta.logic.Iterable
-@description Abstract object implementing the standard operations of an iterator pattern.
+@description Abstract object implementing the standard operations of an iterator pattern
 */
 {
 		local:

@@ -1,6 +1,6 @@
 /*
 @identifier org.meta.data.collections.DoubleLinkedListTest
-@require org.meta.data.collections.DoubleLinkedList
+@require org.meta.data.collections.DoubleLinkedList, org.meta.data.collections.Collection
 @extend org.meta.Object
 */
 {
@@ -11,8 +11,7 @@
 
 					// variables
 					
-					var	arrayShuffle = function(array) { return array.sort(function( ) { return Math.random(1) < 0.5 ? -1 : 1 ; }) ; },
-						VALUES,
+					var	VALUES,
 						CYCLES = 100,
 						ELEMENTS = 100 ;
 					
@@ -349,7 +348,7 @@
 						next,
 						values = [ ] ;
 						
-						list = DoubleLinkedList.create({sort: DoubleLinkedList.SORT_DEFAULT}) ;
+						list = DoubleLinkedList.create({attributes: Collection.SORTED_COLLECTION}) ;
 						VALUES.forEach(function(v) { list.add(v) ; }) ;
 
 						next = list.head_element ;
@@ -365,7 +364,7 @@
 						list ;
 						for( ; ++index < CYCLES ; )
 						{
-								list = DoubleLinkedList.create({sort: DoubleLinkedList.SORT_DEFAULT}) ;
+								list = DoubleLinkedList.create({attributes: Collection.SORTED_COLLECTION}) ;
 								then = Date.now( ) ;
 								VALUES.forEach(function(v) { list.add(v) ; }) ;
 								now = Date.now( ) ;
@@ -723,7 +722,7 @@
 						next,
 						values = [ ] ;
 
-						list = DoubleLinkedList.create({sort: DoubleLinkedList.SORT_DEFAULT}) ;
+						list = DoubleLinkedList.create({attributes: Collection.SORTED_COLLECTION}) ;
 						VALUES.forEach(function(v) { list.add(v) ; }) ; // fill the list
 					
 						next = list.head_element ; // collect list values
@@ -742,7 +741,7 @@
 
 						for( ; ++index < CYCLES ; )
 						{
-								list = DoubleLinkedList.create({sort: DoubleLinkedList.SORT_DEFAULT}) ;
+								list = DoubleLinkedList.create({attributes: Collection.SORTED_COLLECTION}) ;
 								then = Date.now( ) ;
 								VALUES.forEach(function(v) { list.add(v) ; }) ;
 								now = Date.now( ) ;
@@ -760,7 +759,7 @@
 					
 						console.group('DoubleLinkedList<String>[sort=default]#get(VALUES.length + 1)') ;
 					
-						list = DoubleLinkedList.create({sort: DoubleLinkedList.SORT_DEFAULT}) ;
+						list = DoubleLinkedList.create({attributes: Collection.SORTED_COLLECTION}) ;
 						VALUES.forEach(function(v) { list.add(v) ; }) ;
 					
 					//----- Result Sample
@@ -789,7 +788,7 @@
 					
 						console.group('DoubleLinkedList<String>[sort=default]#get(VALUES.length - 1)') ;
 					
-						list = DoubleLinkedList.create({sort: DoubleLinkedList.SORT_DEFAULT}) ;
+						list = DoubleLinkedList.create({attributes: Collection.SORTED_COLLECTION}) ;
 						VALUES.forEach(function(v) { list.add(v) ; }) ;
 					
 					//----- Result Sample
@@ -829,7 +828,7 @@
 						values = [ ],
 						removed ;
 
-						list = DoubleLinkedList.create({sort: DoubleLinkedList.SORT_DEFAULT}) ;
+						list = DoubleLinkedList.create({attributes: Collection.SORTED_COLLECTION}) ;
 						VALUES.forEach(function(v) { list.add(v) ; }) ;
 					
 					//----- Result Sample
@@ -852,7 +851,7 @@
 					var aggregate = 0, index = -1, then, now ;
 						for( ; ++index < CYCLES ; )
 						{
-								list = DoubleLinkedList.create({sort: DoubleLinkedList.SORT_DEFAULT}) ;
+								list = DoubleLinkedList.create({attributes: Collection.SORTED_COLLECTION}) ;
 								VALUES.forEach(function(v) { list.add(v) ; }) ;
 								then = Date.now( ) ;
 								list.remove(0) ;
@@ -874,7 +873,7 @@
 						values = [ ],
 						removed ;
 
-						list = DoubleLinkedList.create({sort: DoubleLinkedList.SORT_DEFAULT}) ;
+						list = DoubleLinkedList.create({attributes: Collection.SORTED_COLLECTION}) ;
 						VALUES.forEach(function(v) { list.add(v) ; }) ;
 					
 					//----- Result Sample
@@ -1359,7 +1358,7 @@
 						next,
 						values = [ ] ;
 						
-						list = DoubleLinkedList.create({sort: DoubleLinkedList.SORT_DEFAULT}) ;
+						list = DoubleLinkedList.create({attributes: Collection.SORTED_COLLECTION}) ;
 						VALUES.forEach(function(v) { list.add(v) ; }) ;
 
 						next = list.head_element ;
@@ -1375,7 +1374,7 @@
 						list ;
 						for( ; ++index < CYCLES ; )
 						{
-								list = DoubleLinkedList.create({sort: DoubleLinkedList.SORT_DEFAULT}) ;
+								list = DoubleLinkedList.create({attributes: Collection.SORTED_COLLECTION}) ;
 								then = Date.now( ) ;
 								VALUES.forEach(function(v) { list.add(v) ; }) ;
 								now = Date.now( ) ;
@@ -1732,7 +1731,7 @@
 						next,
 						values = [ ] ;
 
-						list = DoubleLinkedList.create({sort: DoubleLinkedList.SORT_DEFAULT}) ;
+						list = DoubleLinkedList.create({attributes: Collection.SORTED_COLLECTION}) ;
 						VALUES.forEach(function(v) { list.add(v) ; }) ; // fill the list
 					
 						next = list.head_element ; // collect list values
@@ -1751,7 +1750,7 @@
 
 						for( ; ++index < CYCLES ; )
 						{
-								list = DoubleLinkedList.create({sort: DoubleLinkedList.SORT_DEFAULT}) ;
+								list = DoubleLinkedList.create({attributes: Collection.SORTED_COLLECTION}) ;
 								then = Date.now( ) ;
 								VALUES.forEach(function(v) { list.add(v) ; }) ;
 								now = Date.now( ) ;
@@ -1769,7 +1768,7 @@
 					
 						console.group('DoubleLinkedList<String>[sort=default]#get(VALUES.length + 1)') ;
 					
-						list = DoubleLinkedList.create({sort: DoubleLinkedList.SORT_DEFAULT}) ;
+						list = DoubleLinkedList.create({attributes: Collection.SORTED_COLLECTION}) ;
 						VALUES.forEach(function(v) { list.add(v) ; }) ;
 					
 					//----- Result Sample
@@ -1798,7 +1797,7 @@
 					
 						console.group('DoubleLinkedList<String>[sort=default]#get(VALUES.length - 1)') ;
 					
-						list = DoubleLinkedList.create({sort: DoubleLinkedList.SORT_DEFAULT}) ;
+						list = DoubleLinkedList.create({attributes: Collection.SORTED_COLLECTION}) ;
 						VALUES.forEach(function(v) { list.add(v) ; }) ;
 					
 					//----- Result Sample
@@ -1838,7 +1837,7 @@
 						values = [ ],
 						removed ;
 
-						list = DoubleLinkedList.create({sort: DoubleLinkedList.SORT_DEFAULT}) ;
+						list = DoubleLinkedList.create({attributes: Collection.SORTED_COLLECTION}) ;
 						VALUES.forEach(function(v) { list.add(v) ; }) ;
 					
 					//----- Result Sample
@@ -1861,7 +1860,7 @@
 					var aggregate = 0, index = -1, then, now ;
 						for( ; ++index < CYCLES ; )
 						{
-								list = DoubleLinkedList.create({sort: DoubleLinkedList.SORT_DEFAULT}) ;
+								list = DoubleLinkedList.create({attributes: Collection.SORTED_COLLECTION}) ;
 								VALUES.forEach(function(v) { list.add(v) ; }) ;
 								then = Date.now( ) ;
 								list.remove(0) ;
@@ -1883,7 +1882,7 @@
 						values = [ ],
 						removed ;
 
-						list = DoubleLinkedList.create({sort: DoubleLinkedList.SORT_DEFAULT}) ;
+						list = DoubleLinkedList.create({attributes: Collection.SORTED_COLLECTION}) ;
 						VALUES.forEach(function(v) { list.add(v) ; }) ;
 					
 					//----- Result Sample

@@ -1027,6 +1027,8 @@
 		{
 				return array.splice(index, 1)[0] ;
 		} ;
+ 
+		Core.arrayShuffle = function(array) { return array.sort(function( ) { return Math.random(1) < 0.5 ? -1 : 1 ; }) ; } ;
 
 	//- Function Operations
  
@@ -1650,12 +1652,10 @@ assert(top !== ring || (isSet('next', top) && isSet('previous', top)), '!') ;
  
 			// variables
  
-			var constructor/*, extend, main*/,
-//				identifier,
-				reflect/*, prototype, local, global*/ ;
+			var constructor,
+				reflect ;
  
 			//
- 
 
 //				assert(isSet('identifier', properties), 'Illegal State: Missing required property "identifier"') ;
  
@@ -1665,9 +1665,8 @@ assert(top !== ring || (isSet('next', top) && isSet('previous', top)), '!') ;
 				/*Create a constructor for the given type and store it on the library.*/
 				constructor = Library.CONSTRUCTORS[identifier] = Library.constructorFor(identifier) ;
  
- 				reflect = constructor.reflect ;
-
- 				/*Store the constructor under its namespace on the packages container of the library.*/
+  				/*Store the constructor under its namespace on the packages container of the library.*/
+				reflect = constructor.reflect ;
 				(objectCreateNamespace(reflect.namespace, Library.PACKAGES))[reflect.name] = constructor ;
 
 				Library.defineType(constructor, properties) ;
@@ -2397,7 +2396,7 @@ assert(Queue.TOP.job.getID( ) === job.getID( ), 'Illegal State: Job to continue 
 		*/
 		Library.defineType = function defineType(constructor, properties)
 		{
-// console.log('Library::defineType (%s)', constructor.reflect.identifier) ;
+
 			// variables
 
 			var reflect,
@@ -2409,9 +2408,10 @@ assert(Queue.TOP.job.getID( ) === job.getID( ), 'Illegal State: Job to continue 
 				reflect = constructor.reflect ;
 // console.log('reflect:') ;
 // console.dir(reflect) ;
+
 				/*Construct the prototype object.*/
 				if((extend = properties.extend)) Library.definePrototype(extend, constructor) ;
- 
+
 				/*Validate the main operation.*/
 				if((main = reflect.main = extend ? properties.main || extend.reflect.main : properties.main || VOID)) assert(main.length > 0, 'Invalid main method. Formal parameter list may not be empty (identifier="%s")', reflect.identifier) ; // technically, calls to the constructor which are not used to create a prototype object must have at least one argument (and the formal parameter list does not necessarily have to reflect that, i.e. may be undefined); so, this actually only serves as a reminder
 
@@ -2420,7 +2420,6 @@ assert(Queue.TOP.job.getID( ) === job.getID( ), 'Illegal State: Job to continue 
 
  				/*Put local properties on the constructor's prototype property.*/
 				Library.defineLocalProperties(constructor, properties.local) ;
-
 // console.log('Library::defineType(%s):', identifier) ;
 // console.dir(constructor) ;
 				/*Destroy the property container.*/
@@ -2439,19 +2438,14 @@ assert(Queue.TOP.job.getID( ) === job.getID( ), 'Illegal State: Job to continue 
 		*/
 		Library.definePrototype = function definePrototype(super_type, sub_type/*, compiled*/)
 		{
-// console.log('Library::definePrototype (%s): %s', constructor.reflect.identifier, identifier) ;
-			// variables
-			
-			var super_type,
-				reflect,
-				a ;
-			
+
 			//
 			
-				reflect = sub_type.reflect ;
+//				reflect = sub_type.reflect ;
 
 				/*Use the constructor function to create a prototype object for the super type.*/
 				sub_type.prototype = new super_type( ) ;
+
 				sub_type.prototype.super = sub_type.super = super_type ; // reflect the super type on instances and constructors of the derived type
 //console.log('\tglobal-super-property: %s', constructor.super) ;
 //console.log('\tlocal-super-property: %s', constructor.prototype.super) ;

@@ -26,7 +26,7 @@
 				/**
 				* Remove bits from the attributes bitmap.
 				*
-				* @implementation Let `a` denote the `attributes` bitmap and `b` denote the given bitmap; let a_i or b_i be the i-th bit of a or b. The following algorithm is used
+				* @implementation Let `a` denote the `attributes` bitmap and `b` denote the given bitmap; let a_i or b_i be the i-th bit of a and b respectively. The following algorithm is used
 				*	(1) `~a` [invert the `attributes` bitmap (any bit which was one is now zero and v.v.)]
 				*	(2) `c:=~a|b`;  let `c_i:=(~a|b)_i` [perform a logical disjunction on the inverted `attributes` bitmap and the given bitmap]
 				*		(2.1) `b_i = 1` [Bit is set on the given bitmap]:

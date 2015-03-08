@@ -2,32 +2,36 @@
 @identifier org.meta.data.collections.DoubleLinkedList
 @extend org.meta.data.collections.LinkedList
 @implement org.meta.data.collections.Collection
-@require org.meta.data.collections.LinkedList$Iterator,
 @description A double linked list implementation.
 */
-(function( ) {
-return {
-/*
-@todo
-
-a double linked list is not a Ring !
-
-DoubleLinkedList (head has no predecessor, last element has no successor especially it is not linked with head):
-|head| <-> |e_1| <-> ... <-> |e_n|
-Ring (all elements have predecessors and successor, especially last element doubly linked with head, head is designated element):
-					  v										v
- ... <-> |e_n| <-> |head| <-> |e_1| <-> ... <-> |e_n| <-> |head| <-> ...
-
-implement Ring as extension of DoubleLinkedList
-*/
-		main: function main(/*attributes, limit,*/ comparator)
+{
+		local:
 		{
-//				this.attributes = attributes ;
-//				this.limit = limit ;
-				this.comparator = comparator ;
-		},
-		global:
-		{
+				addUnsorted: function addUnsorted(value)
+				{
+				
+					// variables
+					
+					var element, current ;
+					
+					//
+					
+						element = {value: value, next: null, previous: null} ;
+						
+						if(! this.isEmpty( ))
+						{
+ 
+								current = this.head_element ;
+								while(current.next) current = current.next ;
+
+								/*Link the new element*/
+								current.next = element ;
+								element.previous = current ;
+ 
+						}
+						else this.head_element = element ;
+						
+				},
 				addSorted: function addSorted(value)
 				{
 				
@@ -94,34 +98,6 @@ implement Ring as extension of DoubleLinkedList
 						}
 						else this.head_element = element ;
 
-				}
-		},
-		local:
-		{
-				add: function add(value)
-				{
-				
-					// variables
-					
-					var element, current ;
-					
-					//
-					
-						element = {value: value, next: null, previous: null} ;
-						
-						if(! this.isEmpty( ))
-						{
- 
-								current = this.head_element ;
-								while(current.next) current = current.next ;
-
-								/*Link the new element*/
-								current.next = element ;
-								element.previous = current ;
- 
-						}
-						else this.head_element = element ;
-						
 				},
 				remove: function remove(index)
 				{
@@ -171,5 +147,4 @@ implement Ring as extension of DoubleLinkedList
 
 				}
 		}
-} ;
-})( )
+}

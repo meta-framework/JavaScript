@@ -1,8 +1,8 @@
 /*
-@identifier org.meta.data.collections.RingStackTest
+@identifier org.meta.data.collections.RingQueueTest
 @extend org.meta.Object
-@require org.meta.data.collections.RingStack
-@description Tests `org.meta.data.collections.RingStack`
+@require org.meta.data.collections.RingQueue
+@description Tests org.meta.data.collections.RingQueue
 */
 {
 		global:
@@ -18,9 +18,9 @@
 					
 					//
 					
-					//- RingStack<Number>
+					//- RingQueue<Number>
 
-						console.group('RingStack<Number>') ;
+						console.group('RingQueue<Number>') ;
 
 						VALUES = [ ] ;
 						for(var i = -1 ; ++i < ELEMENTS ; ) VALUES[i] = i ;
@@ -30,80 +30,80 @@
 						
 					//--- Ring<Number>#add
 					
-						console.group('RingStack<Number>#push') ;
+						console.group('RingQueue<Number>#enqueue') ;
 
 					//---- Result Profile
 
-					var stack,
+					var queue,
 						next,
 						values = [ ] ;
 
-						stack = RingStack.create( ) ;
-						VALUES.forEach(function(v) { stack.push(v) ; }) ; // fill the stack
+						queue = RingQueue.create( ) ;
+						VALUES.forEach(function(v) { queue.enqueue(v) ; }) ; // fill the queue
 					
-						next = stack.head_element ; // collect stack values
+						next = queue.head_element ; // collect queue values
 						do values[values.length] = next.value ;
-						while((next = next.next) && next !== stack.head_element) ;
+						while((next = next.next) && next !== queue.head_element) ;
 			
 						out('sample-result:') ;
 						out(values) ;
 					
-						stack.destroy( ) ;
+						queue.destroy( ) ;
 
 					//---- Time Profile
 					
-					var stack,
+					var queue,
 						aggregate = 0, index = -1, then, now ;
 					
 						for( ; ++index < CYCLES ; )
 						{
-								stack = RingStack.create( ) ;
+								queue = RingQueue.create( ) ;
 								then = Date.now( ) ;
-								VALUES.forEach(function(v) { stack.push(v) ; }) ;
+								VALUES.forEach(function(v) { queue.enqueue(v) ; }) ;
 								now = Date.now( ) ;
 								aggregate += now - then ;
-								stack.destroy( ) ;
+								queue.destroy( ) ;
 						}
 					
 						out('average-time (cycles=%s, elements=%s, aggregate=%sms): %sms', CYCLES, ELEMENTS, aggregate, aggregate/CYCLES) ;
 						
 						console.groupEnd( ) ;
 					
-					//--- RingStack<Number>#pop
+					//--- RingQueue<Number>#dequeue
 					
-					var stack,
+					var queue,
 						removed,
 						next,
 						values = [ ] ;
 					
-						console.group('RingStack<Number>#pop') ;
+						console.group('RingQueue<Number>#dequeue') ;
 					
-						stack = RingStack.create( ) ;
-						VALUES.forEach(function(v) { stack.push(v) ; }) ;
+						queue = RingQueue.create( ) ;
+						VALUES.forEach(function(v) { queue.enqueue(v) ; }) ;
 					
 					//----- Result Sample
 					
-						removed = stack.pop( ) ;
+						removed = queue.dequeue( ) ;
 
-						next = stack.head_element ; // collect stack values
+						next = queue.head_element ; // collect queue values
 						do values[values.length] = next.value ;
-						while((next = next.next) && next !== stack.head_element) ;
+						while((next = next.next) && next !== queue.head_element) ;
 					
 						out('sample-result: %s', removed) ;
-						out('remaining-stack:') ;
+						out('remaining-queue:') ;
 						out(values) ;
 						
 					//----- Time Profile
 					
-					var stack,
+					var queue,
 						aggregate = 0, index = -1, then, now ;
 					
 						for( ; ++index < CYCLES ; )
 						{
-								stack = RingStack.create( ) ;
-								VALUES.forEach(function(v) { stack.push(v) ; }) ;
+								queue = RingQueue.create( ) ;
+								VALUES.forEach(function(v) { queue.enqueue(v) ; }) ;
 								then = Date.now( ) ;
-								stack.pop( );
+								queue.dequeue( );
 								now = Date.now( ) ;
 								aggregate += now - then ;
 						}
@@ -112,22 +112,22 @@
 					
 						console.groupEnd( ) ;
 
-					//--- RingStack<Number>#contains
+					//--- RingQueue<Number>#contains
 					
-					var stack ;
+					var queue ;
 					
-						console.group('RingStack<Number>#contains') ;
+						console.group('RingQueue<Number>#contains') ;
 
-						stack = RingStack.create( ) ;
-						VALUES.forEach(function(v) { stack.push(v) ; }) ;
+						queue = RingQueue.create( ) ;
+						VALUES.forEach(function(v) { queue.enqueue(v) ; }) ;
 
-					//---- RingStack<Number>#contains(value: Null)
+					//---- RingQueue<Number>#contains(value: Null)
 					
-						console.group('RingStack<Number>#contains(NULL)') ;
+						console.group('RingQueue<Number>#contains(NULL)') ;
 					
 					//----- Result Sample
 					
-						out('sample-result: %s', stack.contains(NULL)) ;
+						out('sample-result: %s', queue.contains(NULL)) ;
 						
 					//----- Time Profile
 					
@@ -135,7 +135,7 @@
 						for( ; ++index < CYCLES ; )
 						{
 								then = Date.now( ) ;
-								stack.contains(NULL) ;
+								queue.contains(NULL) ;
 								now = Date.now( ) ;
 								aggregate += now - then ;
 						}
@@ -144,13 +144,13 @@
 					
 						console.groupEnd( ) ;
 					
-					//---- RingStack<Number>#contains(value: Void)
+					//---- RingQueue<Number>#contains(value: Void)
 					
-						console.group('RingStack<Number>#contains(VOID)') ;
+						console.group('RingQueue<Number>#contains(VOID)') ;
 					
 					//----- Result Sample
 					
-						out('sample-result: %s', stack.contains(VOID)) ;
+						out('sample-result: %s', queue.contains(VOID)) ;
 						
 					//----- Time Profile
 					
@@ -158,7 +158,7 @@
 						for( ; ++index < CYCLES ; )
 						{
 								then = Date.now( ) ;
-								stack.contains(VOID) ;
+								queue.contains(VOID) ;
 								now = Date.now( ) ;
 								aggregate += now - then ;
 						}
@@ -169,11 +169,11 @@
 
 					//----
 					
-						console.group('RingStack<Number>#contains(VALUES[VALUES.length - 1])') ;
+						console.group('RingQueue<Number>#contains(VALUES[VALUES.length - 1])') ;
 					
 					//----- Result Sample
 					
-						out('sample-result: %s', stack.contains(VALUES[VALUES.length - 1])) ;
+						out('sample-result: %s', queue.contains(VALUES[VALUES.length - 1])) ;
 						
 					//----- Time Profile
 					
@@ -181,7 +181,7 @@
 						for( ; ++index < CYCLES ; )
 						{
 								then = Date.now( ) ;
-								stack.contains(VALUES[VALUES.length - 1]) ;
+								queue.contains(VALUES[VALUES.length - 1]) ;
 								now = Date.now( ) ;
 								aggregate += now - then ;
 						}
@@ -192,11 +192,11 @@
 					
 					//----
 					
-						console.group('RingStack<Number>#contains(ELEMENTS)') ;
+						console.group('RingQueue<Number>#contains(ELEMENTS)') ;
 					
 					//----- Result Sample
 					
-						out('sample-result: %s', stack.contains(ELEMENTS)) ;
+						out('sample-result: %s', queue.contains(ELEMENTS)) ;
 						
 					//----- Time Profile
 					
@@ -204,7 +204,7 @@
 						for( ; ++index < CYCLES ; )
 						{
 								then = Date.now( ) ;
-								stack.contains(ELEMENTS) ;
+								queue.contains(ELEMENTS) ;
 								now = Date.now( ) ;
 								aggregate += now - then ;
 						}
