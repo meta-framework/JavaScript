@@ -31,17 +31,20 @@
  
 					// variables
  
-					var length = 0,
-						next ;
+					var iterator,
+						length = 0 ;
  
 					//
  
+						iterator = this.iterator( ) ;
+						while(iterator.hasNext( )) length++, iterator.next( ) ;
+/*@deprecated
 						if((next = this.head_element.next))
 						{
 								do length++ ;
 								while((next = next.next)) ;
 						}
-
+*/
 					// return
  
 					return length ;

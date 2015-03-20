@@ -1,4 +1,3 @@
-
 /*
 * Meta JavaScript Framework bootstrap script v1.0
 *
@@ -1067,7 +1066,6 @@
 		*
 		* @link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...in
 		* @link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/delete
-		* @todo Apparently the `delete` operator only actually deletes properties which were not inherited through the prototype chain (which are reset to their defaults). It may however indirectly lead to garbage collection on not-inherited properties.
 		*/
  
 		Core.objectDestroy = objectDestroy = function objectDestroy(object)
@@ -1080,7 +1078,7 @@
  
 						delete object[k] ;
  
-						if(object[k]) object[k] = null ;
+						if(object[k]) object[k] = null ; // explicitely set to `null` if the property was inherited
  
 				}
  
@@ -1754,7 +1752,7 @@ Library.listen(Library.STATE_REQUIREMENT_RESOLVED, function(event) {
 			var _date = Date.now( ),
 				_counter = 0 ;
 			
-				/*This function encapsulates the variables `_date` and `_counter` defined in the scope of the outer function.*/
+				/*This function encapsulates the variables `_date` and `_counter` defined within the scope of the outer function.*/
 				return function createID( )
 				{
 			
@@ -2912,12 +2910,6 @@ error('error ("%s") :c', identifier) ;
 				return compiled ;
 
 		} ;
-
-		/**
-		* @deprecated
-		* @todo: refactor into `Core`.
-		*/
-		Library._constructorOf = function constructorOf(identifier) { return this.CONSTRUCTORS[identifier] ; } ;
 
 	//- Configuration Object
 
